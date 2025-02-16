@@ -71,6 +71,7 @@ export const widgets = [
 	'userList',
 	'clicker',
 	'birthdayFollowings',
+	'music',
 
 	...federationWidgets,
 ];
