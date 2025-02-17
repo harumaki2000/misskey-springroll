@@ -90,7 +90,7 @@ const fetchListenbrainzData = async () => {
 
 		const data = await response.json();
 
-		if (!data?.payload?.length) {
+		if (!data?.payload?.listens?.length) {
 			console.error('Invalid or empty data received from Listenbrainz API:', data);
 			throw new Error('No listening data found.');
 		}
@@ -108,7 +108,7 @@ const fetchListenbrainzData = async () => {
 };
 
 const formatData = (data: any): string => {
-	const latestTrack = data?.payload?.[0];
+	const latestTrack = data?.payload?.listens?.[0];
 	if (!latestTrack) return '';
 
 	return widgetProps.noteFormat
