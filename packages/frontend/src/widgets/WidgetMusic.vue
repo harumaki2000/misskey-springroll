@@ -40,7 +40,7 @@ import { misskeyApi } from '@/scripts/misskey-api.js';
 import { $i } from '@/account.js';
 import MkMfm from '@/components/global/MkMfm.js';
 
-const name = music;
+const name = i18n.ts._widgets.listenBrainz;
 
 const widgetPropsDef = {
 	showHeader: {
