@@ -8695,7 +8695,7 @@ export interface Locale extends ILocale {
         /**
          * NowPlaying
          */
-				"music": string;
+        "music": string;
     };
     "_cw": {
         /**
