@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkContainer v-if="widgetProps" :showHeader="widgetProps.showHeader" data-cy-mkw-music class="mkw-music">
 	<template #icon><i class="ti ti-note"></i></template>
-	<template #header>{{ i18n.ts.widgets.music }}</template>
+	<template #header>{{ i18n.ts._widgets.music }}</template>
 	<div v-if="isLoading" class="root">
 		<MkLoading/>
 	</div>
