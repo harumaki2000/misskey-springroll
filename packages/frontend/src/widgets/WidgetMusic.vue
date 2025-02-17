@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<p v-if="formattedData">{{ formattedData }}</p>
 		<img v-if="infoImageUrl" :src="infoImageUrl" alt="Info Image"/>
 		<div class="buttons">
-			<MkButton class="refresh _button" @click="refreshData">{{ i18n.ts.refresh }}</MkButton>
+			<button class="_button" :class="buttonStyleClass" @click="fetchPlayingNow()"><i class="ti ti-refresh"></i></button>
 			<MkButton class="note _button" :disabled="!formattedData" @click="postNote">{{ i18n.ts.note }}</MkButton>
 		</div>
 	</div>
@@ -27,15 +27,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue';
-import { useWidgetPropsManager } from './widget.ts';
-import type { WidgetComponentEmits, WidgetComponentProps } from './widget.ts';
+import { useWidgetPropsManager } from './widget.js';
+import type { WidgetComponentEmits, WidgetComponentProps, WidgetComponentExpose } from './widget.ts'; // WidgetComponentExpose をインポート
 import type { GetFormResultType } from '@/scripts/form.ts';
 import MkContainer from '@/components/MkContainer.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import MkButton from '@/components/MkButton.vue';
-import { misskeyApi } from '@/scripts/misskey-api.ts';
-import { infoImageUrl } from '@/instance.ts';
-import { i18n } from '@/i18n.ts';
+import { misskeyApi } from '@/scripts/misskey-api.js';
+import { infoImageUrl } from '@/instance.js';
+import { i18n } from '@/i18n.js';
 
 const name = 'music';
 
@@ -66,10 +66,11 @@ const { widgetProps, configure, save } = useWidgetPropsManager(name,
 	emit,
 );
 
-const listenbrainzData = ref<any>(null);
+const listenbrainzData = ref<any>(null); // any型ではなく、適切な型を指定することを推奨
 const isLoading = ref(false);
 const formattedData = ref('');
 const errorMessage = ref<string | null>(null);
+const buttonStyleClass = ref<string>('_button'); // buttonStyleClass を ref として定義
 
 const fetchListenbrainzData = async () => {
 	isLoading.value = true;
@@ -119,12 +120,12 @@ const formatData = (data: any): string => {
 
 const refreshData = () => {
 	fetchListenbrainzData()
-		.then((result) => {
-			data.value = result;
-			error.value = null;
+		.then((result: any) => {
+			listenbrainzData.value = result;
+			errorMessage.value = null;
 		})
-		.catch((err) => {
-			error.value = err.message;
+		.catch((err: any) => {
+			errorMessage.value = err.message;
 			emit('error', err.message);
 		});
 };
@@ -133,7 +134,7 @@ const postNote = async () => {
 	if (!formattedData.value) return;
 
 	try {
-		const response = await misskeyApi.post('/notes/create', { text: formattedData.value });
+		const response = await misskeyApi('/notes/create', { text: formattedData.value });
 
 		if (!response.ok) {
 			const errorText = await response.text();
@@ -147,26 +148,32 @@ const postNote = async () => {
 	}
 };
 
+const fetchPlayingNow = () => {
+	fetchListenbrainzData();
+};
+
 onMounted(() => {
-	if (widgetProps) {
+	if (widgetProps && widgetProps.userId) {
 		fetchListenbrainzData();
 	}
 });
 
-watch(() => widgetProps.userId, (newUserId) => {
-	if (newUserId) {
-		fetchListenbrainzData();
-	} else {
-		formattedData.value = '';
-	}
-});
+watch(
+	() => widgetProps.userId,
+	(newUserId: string | null) => {
+		if (newUserId) {
+			fetchListenbrainzData();
+		} else {
+			formattedData.value = '';
+		}
+	},
+);
 
 defineExpose<WidgetComponentExpose>({
 	name,
 	configure,
 	id: props.widget ? props.widget.id : null,
 });
-
 </script>
 
 <style scoped>
