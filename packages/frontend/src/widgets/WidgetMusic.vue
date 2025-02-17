@@ -76,11 +76,11 @@ const fetchListenbrainzData = async () => {
 	errorMessage.value = null;
 
 	try {
-		if (!props.userId) {
+		if (!widgetProps.userId) {
 			throw new Error('User ID is required.');
 		}
 
-		const response = await fetch(`https://api.listenbrainz.org/1/user/${props.userId}/listening-history`);
+		const response = await fetch(`https://api.listenbrainz.org/1/user/${widgetProps.userId}/listening-history`);
 
 		if (!response.ok) {
 			const errorText = await response.text();
@@ -153,7 +153,7 @@ onMounted(() => {
 	}
 });
 
-watch(() => props.userId, (newUserId) => {
+watch(() => widgetProps.userId, (newUserId) => {
 	if (newUserId) {
 		fetchListenbrainzData();
 	} else {
