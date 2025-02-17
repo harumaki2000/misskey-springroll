@@ -27,15 +27,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue';
-import { useWidgetPropsManager } from './widget.js';
+import { useWidgetPropsManager } from './widget.ts';
 import type { WidgetComponentEmits, WidgetComponentProps } from './widget.ts';
 import type { GetFormResultType } from '@/scripts/form.ts';
 import MkContainer from '@/components/MkContainer.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import MkButton from '@/components/MkButton.vue';
-import { misskeyApi } from '@/scripts/misskey-api.js';
-import { infoImageUrl } from '@/instance.js';
-import { i18n } from '@/i18n.js';
+import { misskeyApi } from '@/scripts/misskey-api.ts';
+import { infoImageUrl } from '@/instance.ts';
+import { i18n } from '@/i18n.ts';
 
 const name = 'music';
 
