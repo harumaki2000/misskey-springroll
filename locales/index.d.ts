@@ -8692,10 +8692,10 @@ export interface Locale extends ILocale {
          * 今日誕生日のユーザー
          */
         "birthdayFollowings": string;
-			  /**
-		     * NowPlaying
-			   */
-			  "music": string;
+        /**
+         * NowPlaying
+         */
+				"music": string;
     };
     "_cw": {
         /**
