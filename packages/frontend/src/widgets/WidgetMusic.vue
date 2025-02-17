@@ -4,28 +4,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkContainer v-if="widgetProps && Object.keys(widgetProps).length > 0" :showHeader="widgetProps.showHeader" data-cy-mkw-music class="mkw-music">
+<MkContainer v-if="widgetProps" :showHeader="widgetProps.showHeader" data-cy-mkw-music class="mkw-music">
 	<template #icon><i class="ti ti-note"></i></template>
 	<template #header>{{ i18n.ts.widgets.music }}</template>
 	<div v-if="isLoading" class="root">
 		<MkLoading/>
 	</div>
+	<div v-else-if="errorMessage">
+		<div class="error">{{ errorMessage }}</div>
+	</div>
 	<div v-else :style="`height: ${widgetProps.height}px;`" class="music-widget">
 		<p v-if="formattedData">{{ formattedData }}</p>
 		<img v-if="infoImageUrl" :src="infoImageUrl" alt="Info Image"/>
-		<MkButton class="refresh _buttonPrimary" @click="refreshData">{{ i18n.ts.refresh }}</MkButton>
-		<MkButton class="note _buttonPrimary" @click="postNote">{{ i18n.ts.note }}</MkButton>
+		<div class="buttons">
+			<MkButton class="refresh _button" @click="refreshData">{{ i18n.ts.refresh }}</MkButton>
+			<MkButton class="note _button" :disabled="!formattedData" @click="postNote">{{ i18n.ts.note }}</MkButton>
+		</div>
 	</div>
 </MkContainer>
-<div v-else-if="!widgetProps">Error loading widget properties</div>
 <div v-else>Loading widget properties...</div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentProps } from './widget.ts';
 import type { GetFormResultType } from '@/scripts/form.ts';
+import MkContainer from '@/components/MkContainer.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import MkButton from '@/components/MkButton.vue';
 import { misskeyApi } from '@/scripts/misskey-api.js';
@@ -39,97 +44,129 @@ const widgetPropsDef = {
 		type: 'boolean' as const,
 		default: true,
 	},
-	height: {
-		type: 'number' as const,
-		default: 200,
+	userId: {
+		type: 'string' as const,
+		default: null,
+	},
+	noteFormat: {
+		type: 'string' as const,
+		multiline: true,
+		default: '{track_name} - {artist_name} - {album_name} #NowPlaying',
 	},
 };
 
-type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
+type widgetProps = GetFormResultType<typeof widgetPropsDef>;
 
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
-const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
-
-if (!widgetProps) {
-	configure({});
-}
+const { widgetProps, configure, save } = useWidgetPropsManager(name,
+	widgetPropsDef,
+	props,
+	emit,
+);
 
 const listenbrainzData = ref<any>(null);
-const isLoading = ref<boolean>(false);
-const formattedData = ref<string>('');
+const isLoading = ref(false);
+const formattedData = ref('');
+const errorMessage = ref<string | null>(null);
 
 const fetchListenbrainzData = async () => {
 	isLoading.value = true;
+	errorMessage.value = null;
+
 	try {
-		if (!props.username) {
-			throw new Error('Username is required.');
+		if (!props.userId) {
+			throw new Error('User ID is required.');
 		}
 
-		const url = `https://api.listenbrainz.org/1/user/${props.username}/listening-history`;
-
-		const response = await fetch(url, {
-		});
+		const response = await fetch(`https://api.listenbrainz.org/1/user/${props.userId}/listening-history`);
 
 		if (!response.ok) {
 			const errorText = await response.text();
 			console.error(`Listenbrainz API error: ${response.status} - ${response.statusText}`, errorText);
-
 			throw new Error(`Listenbrainz API request failed: ${response.status}`);
 		}
 
 		const data = await response.json();
 
-		if (!data || !data.payload || !Array.isArray(data.payload)) {
-			console.error('Invalid data format received from Listenbrainz API:', data);
-			throw new Error('Invalid data format.');
+		if (!data?.payload?.length) {
+			console.error('Invalid or empty data received from Listenbrainz API:', data);
+			throw new Error('No listening data found.');
 		}
 
 		listenbrainzData.value = data;
 		formattedData.value = formatData(data);
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Error fetching Listenbrainz data:', error);
 		emit('error', error);
+		errorMessage.value = error.message;
+		formattedData.value = '';
 	} finally {
 		isLoading.value = false;
 	}
 };
 
 const formatData = (data: any): string => {
-	if (data && data.payload && data.payload.length > 0) {
-		const latestTrack = data.payload[0];
-		const trackName = latestTrack.track_name;
-		const artistName = latestTrack.artist_name;
-		const albumName = latestTrack.album_name;
-		return `${trackName} - ${artistName} - ${albumName} #NowPlaying`;
-	}
-	return '';
+	const latestTrack = data?.payload?.[0];
+	if (!latestTrack) return '';
+
+	return widgetProps.noteFormat
+		.replace('{track_name}', latestTrack.track_name || '')
+		.replace('{artist_name}', latestTrack.artist_name || '')
+		.replace('{album_name}', latestTrack.album_name || '');
 };
 
 const refreshData = () => {
-	fetchListenbrainzData();
+	fetchListenbrainzData()
+		.then((result) => {
+			data.value = result;
+			error.value = null;
+		})
+		.catch((err) => {
+			error.value = err.message;
+			emit('error', err.message);
+		});
 };
 
 const postNote = async () => {
+	if (!formattedData.value) return;
+
 	try {
-		const noteContent = formattedData.value;
-		const response = await misskeyApi.post('/notes/create', {
-			text: noteContent,
-		});
-		if (response.status !== 200) {
-			throw new Error(`Failed to post note: ${response.statusText}`);
+		const response = await misskeyApi.post('/notes/create', { text: formattedData.value });
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Failed to post note: ${response.status} - ${response.statusText} - ${errorText}`);
 		}
+
 		console.log('Note posted successfully:', response.data);
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Error posting note:', error);
 		emit('error', error);
 	}
 };
 
 onMounted(() => {
-	fetchListenbrainzData();
+	if (widgetProps) {
+		fetchListenbrainzData();
+	}
 });
+
+watch(() => props.userId, (newUserId) => {
+	if (newUserId) {
+		fetchListenbrainzData();
+	} else {
+		formattedData.value = '';
+	}
+});
+
+defineExpose<WidgetComponentExpose>({
+	name,
+	configure,
+	id: props.widget ? props.widget.id : null,
+});
+
 </script>
 
 <style scoped>
@@ -146,6 +183,12 @@ onMounted(() => {
   border-radius: 4px;
 }
 
+.buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 p {
   margin: 0;
   padding: 8px;
@@ -155,10 +198,15 @@ p {
 img {
   width: 100%;
   height: auto;
+  display: block;
 }
 
-._buttonPrimary {
-  margin-top: 8px;
+._button {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  background-color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .error {
