@@ -80,7 +80,7 @@ const fetchListenbrainzData = async () => {
 			throw new Error('User ID is required.');
 		}
 
-		const response = await fetch(`https://api.listenbrainz.org/1/user/${widgetProps.userId}/listening-history`);
+		const response = await fetch(`https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`);
 
 		if (!response.ok) {
 			const errorText = await response.text();
