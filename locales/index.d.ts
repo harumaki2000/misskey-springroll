@@ -8704,6 +8704,10 @@ export interface Locale extends ILocale {
          * NowPlaying
          */
         "listenBrainz": string;
+        /**
+         * カウンター
+         */
+        "counter": string;
     };
     "_cw": {
         /**
