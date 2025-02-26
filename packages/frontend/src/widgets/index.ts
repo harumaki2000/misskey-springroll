@@ -37,6 +37,7 @@ export default function(app: App) {
 	app.component('WidgetBirthdayFollowings', defineAsyncComponent(() => import('./WidgetBirthdayFollowings.vue')));
 	app.component('WidgetListenBrainz', defineAsyncComponent(() => import('./WidgetListenBrainz.vue')));
 	app.component('WidgetCounter', defineAsyncComponent(() => import('./WidgetCounter.vue')));
+	app.component('WidgetEarthquake', defineAsyncComponent(() => import('./WidgetEarthquake.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
