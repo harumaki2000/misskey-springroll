@@ -75,6 +75,7 @@ export const widgets = [
 	'birthdayFollowings',
 	'listenBrainz',
 	'counter',
+	'earthquake',
 
 	...federationWidgets,
 ];
