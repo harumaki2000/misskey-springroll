@@ -2287,6 +2287,7 @@ _widgets:
   birthdayFollowings: "今日誕生日のユーザー"
   listenBrainz: "NowPlaying"
   counter: "カウンター"
+  earthquake: "地震情報"
 
 _cw:
   hide: "隠す"
