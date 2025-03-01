@@ -100,30 +100,30 @@ defineExpose<WidgetComponentExpose>({
 <style lang="scss" module>
 .root {
   padding: 16px;
-}
-.inputWrapper {
-	display: flex;
-	gap: 8px;
-  margin-bottom: 16px;
-}
-.input-container {
-  display: flex;
-  margin-bottom: 10px;
-}
-.ul {
-  list-style: none;
-  padding: 0;
-}
-.li {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.span {
-  margin-left: 8px;
-  flex-grow: 1;
-}
-.completed {
-  text-decoration: line-through;
+
+  .input-container {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+
+      span {
+        margin-left: 8px;
+        flex-grow: 1;
+
+        &.completed {
+          text-decoration: line-through;
+        }
+      }
+    }
+  }
 }
 </style>
