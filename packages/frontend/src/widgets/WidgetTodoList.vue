@@ -101,6 +101,11 @@ defineExpose<WidgetComponentExpose>({
 .root {
   padding: 16px;
 
+	.inputWrapper {
+	display: flex;
+	margin-bottom: 16px:
+}
+
   .input-container {
     display: flex;
     margin-bottom: 10px;
