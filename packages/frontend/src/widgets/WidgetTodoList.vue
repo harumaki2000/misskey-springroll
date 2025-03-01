@@ -103,7 +103,7 @@ defineExpose<WidgetComponentExpose>({
 
 	.inputWrapper {
 	display: flex;
-	margin-bottom: 16px:
+	margin-bottom: 16px;
 }
 
   .input-container {
