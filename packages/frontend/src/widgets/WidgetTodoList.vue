@@ -110,16 +110,16 @@ defineExpose<WidgetComponentExpose>({
   display: flex;
   margin-bottom: 10px;
 }
-ul {
+.ul {
   list-style: none;
   padding: 0;
 }
-li {
+.li {
   display: flex;
   align-items: center;
   margin-bottom: 8px;
 }
-span {
+.span {
   margin-left: 8px;
   flex-grow: 1;
 }
