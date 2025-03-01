@@ -8708,10 +8708,14 @@ export interface Locale extends ILocale {
          * カウンター
          */
         "counter": string;
-			  /**
+        /**
          * 地震情報
          */
         "earthquake": string;
+        /**
+         * ToDoリスト
+         */
+        "todoList": string;
     };
     "_cw": {
         /**
