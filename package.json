@@ -1,6 +1,6 @@
 {
 	"name": "misskey",
-	"version": "2025.3.1-alpha.0-layp-v1.2.2",
+	"version": "2025.3.1-beta.2-layp-v1.2.2",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
