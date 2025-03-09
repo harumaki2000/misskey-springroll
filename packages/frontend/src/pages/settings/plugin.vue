@@ -101,9 +101,6 @@ import MkButton from '@/components/MkButton.vue';
 import MkCode from '@/components/MkCode.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkKeyValue from '@/components/MkKeyValue.vue';
-import * as os from '@/os.js';
-import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
-import { unisonReload } from '@/utility/unison-reload.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/utility/page-metadata.js';
 import { changePluginActive, configPlugin, pluginLogs, uninstallPlugin } from '@/plugin.js';
@@ -113,9 +110,6 @@ const plugins = prefer.r.plugins;
 
 async function uninstall(plugin) {
 	await uninstallPlugin(plugin);
-	nextTick(() => {
-		unisonReload();
-	});
 }
 
 function copy(text) {
@@ -132,9 +126,6 @@ async function config(plugin) {
 
 function changeActive(plugin, active) {
 	changePluginActive(plugin, active);
-	nextTick(() => {
-		location.reload();
-	});
 }
 
 const headerActions = computed(() => []);

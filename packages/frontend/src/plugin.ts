@@ -178,9 +178,12 @@ export async function installPlugin(code: string, meta?: AiScriptPluginMeta) {
 	prefer.set('plugins', prefer.s.plugins.concat(plugin));
 
 	await authorizePlugin(plugin);
+
+	await launchPlugin(installId);
 }
 
 export async function uninstallPlugin(plugin: Plugin) {
+	abortPlugin(plugin);
 	prefer.set('plugins', prefer.s.plugins.filter(x => x.installId !== plugin.installId));
 	if (Object.hasOwn(store.state.pluginTokens, plugin.installId)) {
 		await os.apiWithDialog('i/revoke-token', {
@@ -192,30 +195,57 @@ export async function uninstallPlugin(plugin: Plugin) {
 	}
 }
 
-export async function configPlugin(plugin: Plugin) {
-	if (plugin.config == null) {
-		throw new Error('This plugin does not have a config');
-	}
-
-	const config = plugin.config;
-	for (const key in plugin.configData) {
-		config[key].default = plugin.configData[key];
-	}
-
-	const { canceled, result } = await os.form(plugin.name, config);
-	if (canceled) return;
-
-	prefer.set('plugins', prefer.s.plugins.map(x => x.installId === plugin.installId ? { ...x, configData: result } : x));
-}
-
-export function changePluginActive(plugin: Plugin, active: boolean) {
-	prefer.set('plugins', prefer.s.plugins.map(x => x.installId === plugin.installId ? { ...x, active } : x));
-}
-
 const pluginContexts = new Map<string, Interpreter>();
 export const pluginLogs = ref(new Map<string, string[]>());
 
-export async function launchPlugin(plugin: Plugin): Promise<void> {
+type HandlerDef = {
+	post_form_action: {
+		title: string,
+		handler: <T>(form: T, update: (key: unknown, value: unknown) => void) => void;
+	};
+	user_action: {
+		title: string,
+		handler: (user: Misskey.entities.UserDetailed) => void;
+	};
+	note_action: {
+		title: string,
+		handler: (note: Misskey.entities.Note) => void;
+	};
+	note_view_interruptor: {
+		handler: (note: Misskey.entities.Note) => unknown;
+	};
+	note_post_interruptor: {
+		handler: (note: FIXME) => unknown;
+	};
+	page_view_interruptor: {
+		handler: (page: Misskey.entities.Page) => unknown;
+	};
+};
+
+type PluginHandler<K extends keyof HandlerDef> = {
+	pluginInstallId: string;
+	type: K;
+	ctx: HandlerDef[K];
+};
+
+let pluginHandlers: PluginHandler<keyof HandlerDef>[] = [];
+
+function addPluginHandler<K extends keyof HandlerDef>(installId: Plugin['installId'], type: K, ctx: PluginHandler<K>['ctx']) {
+	pluginHandlers.push({ pluginInstallId: installId, type, ctx });
+}
+
+export function launchPlugins() {
+	for (const plugin of prefer.s.plugins) {
+		if (plugin.active) {
+			launchPlugin(plugin.installId);
+		}
+	}
+}
+
+async function launchPlugin(id: Plugin['installId']): Promise<void> {
+	const plugin = prefer.s.plugins.find(x => x.installId === id);
+	if (!plugin) return;
+
 	// 後方互換性のため
 	if (plugin.src == null) return;
 
@@ -250,6 +280,49 @@ export async function launchPlugin(plugin: Plugin): Promise<void> {
 			throw err;
 		},
 	);
+}
+
+export function abortPlugin(plugin: Plugin): void {
+	const pluginContext = pluginContexts.get(plugin.installId);
+	if (!pluginContext) return;
+
+	pluginContext.abort();
+	pluginContexts.delete(plugin.installId);
+	pluginLogs.value.delete(plugin.installId);
+	pluginHandlers = pluginHandlers.filter(x => x.pluginInstallId !== plugin.installId);
+}
+
+export function reloadPlugin(plugin: Plugin): void {
+	abortPlugin(plugin);
+	launchPlugin(plugin.installId);
+}
+
+export async function configPlugin(plugin: Plugin) {
+	if (plugin.config == null) {
+		throw new Error('This plugin does not have a config');
+	}
+
+	const config = plugin.config;
+	for (const key in plugin.configData) {
+		config[key].default = plugin.configData[key];
+	}
+
+	const { canceled, result } = await os.form(plugin.name, config);
+	if (canceled) return;
+
+	prefer.set('plugins', prefer.s.plugins.map(x => x.installId === plugin.installId ? { ...x, configData: result } : x));
+
+	reloadPlugin(plugin);
+}
+
+export function changePluginActive(plugin: Plugin, active: boolean) {
+	prefer.set('plugins', prefer.s.plugins.map(x => x.installId === plugin.installId ? { ...x, active } : x));
+
+	if (active) {
+		launchPlugin(plugin.installId);
+	} else {
+		abortPlugin(plugin);
+	}
 }
 
 function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<string, values.Value> {
