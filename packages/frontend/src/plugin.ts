@@ -165,6 +165,10 @@ export async function installPlugin(code: string, meta?: AiScriptPluginMeta) {
 		realMeta = meta;
 	}
 
+	if (prefer.s.plugins.some(x => x.name === realMeta.name)) {
+		throw new Error('Plugin already installed');
+	}
+
 	const installId = uuid();
 
 	const plugin = {
@@ -195,8 +199,14 @@ export async function uninstallPlugin(plugin: Plugin) {
 	}
 }
 
-const pluginContexts = new Map<string, Interpreter>();
-export const pluginLogs = ref(new Map<string, string[]>());
+const pluginContexts = new Map<Plugin['installId'], Interpreter>();
+
+export const pluginLogs = ref(new Map<Plugin['installId'], {
+	at: number;
+	message: string;
+	isSystem?: boolean;
+	isError?: boolean;
+}[]>());
 
 type HandlerDef = {
 	post_form_action: {
@@ -231,6 +241,11 @@ type PluginHandler<K extends keyof HandlerDef> = {
 let pluginHandlers: PluginHandler<keyof HandlerDef>[] = [];
 
 function addPluginHandler<K extends keyof HandlerDef>(installId: Plugin['installId'], type: K, ctx: PluginHandler<K>['ctx']) {
+	pluginLogs.value.get(installId)!.push({
+		at: Date.now(),
+		isSystem: true,
+		message: `Handler registered: ${type}`,
+	});
 	pluginHandlers.push({ pluginInstallId: installId, type, ctx });
 }
 
@@ -249,6 +264,19 @@ async function launchPlugin(id: Plugin['installId']): Promise<void> {
 	// 後方互換性のため
 	if (plugin.src == null) return;
 
+	pluginLogs.value.set(plugin.installId, []);
+
+	function systemLog(message: string, isError = false): void {
+		pluginLogs.value.get(plugin.installId)?.push({
+			at: Date.now(),
+			isSystem: true,
+			message,
+			isError,
+		});
+	}
+
+	systemLog('Starting plugin...');
+
 	await authorizePlugin(plugin);
 
 	const aiscript = new Interpreter(createPluginEnv({
@@ -257,26 +285,33 @@ async function launchPlugin(id: Plugin['installId']): Promise<void> {
 	}), {
 		in: aiScriptReadline,
 		out: (value): void => {
-			console.log(value);
-			pluginLogs.value.get(plugin.installId).push(utils.reprValue(value));
+			pluginLogs.value.get(plugin.installId)!.push({
+				at: Date.now(),
+				message: utils.reprValue(value),
+			});
 		},
 		log: (): void => {
 		},
 		err: (err): void => {
-			pluginLogs.value.get(plugin.installId).push(`${err}`);
+			pluginLogs.value.get(plugin.installId)!.push({
+				at: Date.now(),
+				message: `${err}`,
+				isError: true,
+			});
 			throw err; // install時のtry-catchに反応させる
 		},
 	});
 
 	pluginContexts.set(plugin.installId, aiscript);
-	pluginLogs.value.set(plugin.installId, []);
 
 	aiscript.exec(parser.parse(plugin.src)).then(
 		() => {
 			console.info('Plugin installed:', plugin.name, 'v' + plugin.version);
+			systemLog('Plugin started');
 		},
 		(err) => {
 			console.error('Plugin install failed:', plugin.name, 'v' + plugin.version);
+			systemLog(`${err}`, true);
 			throw err;
 		},
 	);
@@ -333,29 +368,55 @@ function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<s
 		config.set(k, utils.jsToVal(typeof opts.plugin.configData[k] !== 'undefined' ? opts.plugin.configData[k] : v.default));
 	}
 
-	return {
+	function withContext<T>(fn: (ctx: Interpreter) => T): T {
+		const ctx = pluginContexts.get(id);
+		if (!ctx) throw new Error('Plugin context not found');
+		return fn(ctx);
+	}
+
+	const env: Record<string, values.Value> = {
 		...createAiScriptEnv({ ...opts, token: store.state.pluginTokens[id] }),
 
-		'Plugin:register_post_form_action': values.FN_NATIVE(([title, handler]) => {
+		'Plugin:register:post_form_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
 			registerPostFormAction({ pluginId: id, title: title.value, handler });
 		}),
-		'Plugin:register_user_action': values.FN_NATIVE(([title, handler]) => {
+
+		'Plugin:register:user_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
 			registerUserAction({ pluginId: id, title: title.value, handler });
 		}),
-		'Plugin:register_note_action': values.FN_NATIVE(([title, handler]) => {
+
+		'Plugin:register:note_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
 			registerNoteAction({ pluginId: id, title: title.value, handler });
 		}),
-		'Plugin:register_note_view_interruptor': values.FN_NATIVE(([handler]) => {
-			registerNoteViewInterruptor({ pluginId: id, handler });
+
+		'Plugin:register:note_view_interruptor': values.FN_NATIVE(([handler]) => {
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'note_view_interruptor', {
+				handler: withContext(ctx => async (note) => {
+					return utils.valToJs(await ctx.execFn(handler, [utils.jsToVal(note)]));
+				}),
+			});
 		}),
-		'Plugin:register_note_post_interruptor': values.FN_NATIVE(([handler]) => {
-			registerNotePostInterruptor({ pluginId: id, handler });
+
+		'Plugin:register:note_post_interruptor': values.FN_NATIVE(([handler]) => {
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'note_post_interruptor', {
+				handler: withContext(ctx => async (note) => {
+					return utils.valToJs(await ctx.execFn(handler, [utils.jsToVal(note)]));
+				}),
+			});
 		}),
-		'Plugin:register_page_view_interruptor': values.FN_NATIVE(([handler]) => {
-			registerPageViewInterruptor({ pluginId: id, handler });
+
+		'Plugin:register:page_view_interruptor': values.FN_NATIVE(([handler]) => {
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'page_view_interruptor', {
+				handler: withContext(ctx => async (page) => {
+					return utils.valToJs(await ctx.execFn(handler, [utils.jsToVal(page)]));
+				}),
+			});
 		}),
 		'Plugin:open_url': values.FN_NATIVE(([url]) => {
 			utils.assertString(url);
@@ -363,6 +424,16 @@ function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<s
 		}),
 		'Plugin:config': values.OBJ(config),
 	};
+
+	// 後方互換性のため
+	env['Plugin:register_post_form_action'] = env['Plugin:register:post_form_action'];
+	env['Plugin:register_user_action'] = env['Plugin:register:user_action'];
+	env['Plugin:register_note_action'] = env['Plugin:register:note_action'];
+	env['Plugin:register_note_view_interruptor'] = env['Plugin:register:note_view_interruptor'];
+	env['Plugin:register_note_post_interruptor'] = env['Plugin:register:note_post_interruptor'];
+	env['Plugin:register_page_view_interruptor'] = env['Plugin:register:page_view_interruptor'];
+
+	return env;
 }
 
 function registerPostFormAction({ pluginId, title, handler }): void {

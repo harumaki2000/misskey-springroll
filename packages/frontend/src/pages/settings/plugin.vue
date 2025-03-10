@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkFolder v-for="plugin in plugins" :key="plugin.installId">
 					<template #icon><i class="ti ti-plug"></i></template>
 					<template #suffix>
-						<i v-if="plugin.active" class="ti ti-player-play" style="color: var(--MI_THEME-accent);"></i>
+						<i v-if="plugin.active" class="ti ti-player-play" style="color: var(--MI_THEME-success);"></i>
 						<i v-else class="ti ti-player-pause" style="opacity: 0.7;"></i>
 					</template>
 					<template #label>
@@ -59,31 +59,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkKeyValue>
 						</div>
 
-						<MkFolder>
-							<template #icon><i class="ti ti-terminal-2"></i></template>
-							<template #label>{{ i18n.ts._plugin.viewLog }}</template>
+						<div class="_gaps_s">
+							<MkFolder>
+								<template #icon><i class="ti ti-terminal-2"></i></template>
+								<template #label>{{ i18n.ts.logs }}</template>
 
-							<div class="_gaps_s">
-								<div class="_buttons">
-									<MkButton inline @click="copy(pluginLogs.get(plugin.installId)?.join('\n'))"><i class="ti ti-copy"></i> {{ i18n.ts.copy }}</MkButton>
+								<div>
+									<div v-for="log in pluginLogs.get(plugin.installId)" :class="[$style.log, { [$style.isSystemLog]: log.isSystem }]">
+										<div class="_monospace">{{ timeToHhMmSs(log.at) }} {{ log.message }}</div>
+									</div>
 								</div>
+							</MkFolder>
 
-								<MkCode :code="pluginLogs.get(plugin.installId)?.join('\n') ?? ''"/>
-							</div>
-						</MkFolder>
+							<MkFolder :withSpacer="false">
+								<template #icon><i class="ti ti-code"></i></template>
+								<template #label>{{ i18n.ts._plugin.viewSource }}</template>
 
-						<MkFolder>
-							<template #icon><i class="ti ti-code"></i></template>
-							<template #label>{{ i18n.ts._plugin.viewSource }}</template>
-
-							<div class="_gaps_s">
-								<div class="_buttons">
-									<MkButton inline @click="copy(plugin.src)"><i class="ti ti-copy"></i> {{ i18n.ts.copy }}</MkButton>
+								<div class="_gaps_s">
+									<MkCode :code="plugin.src ?? ''" lang="ais"/>
 								</div>
-
-								<MkCode :code="plugin.src ?? ''" lang="ais"/>
-							</div>
-						</MkFolder>
+							</MkFolder>
+						</div>
 					</div>
 				</MkFolder>
 			</div>
@@ -105,11 +101,20 @@ import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/utility/page-metadata.js';
 import { changePluginActive, configPlugin, pluginLogs, uninstallPlugin } from '@/plugin.js';
 import { prefer } from '@/preferences.js';
+import * as os from '@/os.js';
 
 const plugins = prefer.r.plugins;
 
-async function uninstall(plugin) {
+async function uninstall(plugin: Plugin) {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		text: i18n.tsx.removeAreYouSure({ x: plugin.name }),
+	});
+	if (canceled) return;
+
 	await uninstallPlugin(plugin);
+
+	os.success();
 }
 
 function copy(text) {
@@ -128,6 +133,10 @@ function changeActive(plugin, active) {
 	changePluginActive(plugin, active);
 }
 
+function timeToHhMmSs(unixtime: number) {
+	return new Date(unixtime).toTimeString().split(' ')[0];
+}
+
 const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
@@ -137,3 +146,12 @@ definePageMetadata(() => ({
 	icon: 'ti ti-plug',
 }));
 </script>
+
+<style module>
+.log {
+}
+
+.isSystemLog {
+	opacity: 0.5;
+}
+</style>
