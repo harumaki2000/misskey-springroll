@@ -8805,10 +8805,6 @@ export interface Locale extends ILocale {
          */
         "birthdayFollowings": string;
         /**
-         * NowPlaying
-         */
-        "listenBrainz": string;
-        /**
          * カウンター
          */
         "counter": string;
