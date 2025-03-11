@@ -37,40 +37,6 @@ export type AiScriptPluginMeta = {
 	config?: Record<string, any>;
 };
 
-interface PostFormAction {
-	title: string,
-	handler: <T>(form: T, update: (key: unknown, value: unknown) => void) => void;
-}
-
-interface UserAction {
-	title: string,
-	handler: (user: Misskey.entities.UserDetailed) => void;
-}
-
-interface NoteAction {
-	title: string,
-	handler: (note: Misskey.entities.Note) => void;
-}
-
-interface NoteViewInterruptor {
-	handler: (note: Misskey.entities.Note) => unknown;
-}
-
-interface NotePostInterruptor {
-	handler: (note: FIXME) => unknown;
-}
-
-interface PageViewInterruptor {
-	handler: (page: Misskey.entities.Page) => unknown;
-}
-
-export const postFormActions: PostFormAction[] = [];
-export const userActions: UserAction[] = [];
-export const noteActions: NoteAction[] = [];
-export const noteViewInterruptors: NoteViewInterruptor[] = [];
-export const notePostInterruptors: NotePostInterruptor[] = [];
-export const pageViewInterruptors: PageViewInterruptor[] = [];
-
 const parser = new Parser();
 
 export function isSupportedAiScriptVersion(version: string): boolean {
@@ -379,17 +345,40 @@ function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<s
 
 		'Plugin:register:post_form_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
-			registerPostFormAction({ pluginId: id, title: title.value, handler });
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'post_form_action', {
+				title: title.value,
+				handler: withContext(ctx => (form, update) => {
+					ctx.execFn(handler, [utils.jsToVal(form), values.FN_NATIVE(([key, value]) => {
+						if (!key || !value) {
+							return;
+						}
+						update(utils.valToJs(key), utils.valToJs(value));
+					})]);
+				}),
+			});
 		}),
 
 		'Plugin:register:user_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
-			registerUserAction({ pluginId: id, title: title.value, handler });
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'user_action', {
+				title: title.value,
+				handler: withContext(ctx => (user) => {
+					ctx.execFn(handler, [utils.jsToVal(user)]);
+				}),
+			});
 		}),
 
 		'Plugin:register:note_action': values.FN_NATIVE(([title, handler]) => {
 			utils.assertString(title);
-			registerNoteAction({ pluginId: id, title: title.value, handler });
+			utils.assertFunction(handler);
+			addPluginHandler(id, 'note_action', {
+				title: title.value,
+				handler: withContext(ctx => (note) => {
+					ctx.execFn(handler, [utils.jsToVal(note)]);
+				}),
+			});
 		}),
 
 		'Plugin:register:note_view_interruptor': values.FN_NATIVE(([handler]) => {
@@ -418,10 +407,12 @@ function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<s
 				}),
 			});
 		}),
+
 		'Plugin:open_url': values.FN_NATIVE(([url]) => {
 			utils.assertString(url);
 			window.open(url.value, '_blank', 'noopener');
 		}),
+
 		'Plugin:config': values.OBJ(config),
 	};
 
@@ -436,79 +427,6 @@ function createPluginEnv(opts: { plugin: Plugin; storageKey: string }): Record<s
 	return env;
 }
 
-function registerPostFormAction({ pluginId, title, handler }): void {
-	postFormActions.push({
-		title, handler: (form, update) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			pluginContext.execFn(handler, [utils.jsToVal(form), values.FN_NATIVE(([key, value]) => {
-				if (!key || !value) {
-					return;
-				}
-				update(utils.valToJs(key), utils.valToJs(value));
-			})]);
-		},
-	});
-}
-
-function registerUserAction({ pluginId, title, handler }): void {
-	userActions.push({
-		title, handler: (user) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			pluginContext.execFn(handler, [utils.jsToVal(user)]);
-		},
-	});
-}
-
-function registerNoteAction({ pluginId, title, handler }): void {
-	noteActions.push({
-		title, handler: (note) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			pluginContext.execFn(handler, [utils.jsToVal(note)]);
-		},
-	});
-}
-
-function registerNoteViewInterruptor({ pluginId, handler }): void {
-	noteViewInterruptors.push({
-		handler: async (note) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			return utils.valToJs(await pluginContext.execFn(handler, [utils.jsToVal(note)]));
-		},
-	});
-}
-
-function registerNotePostInterruptor({ pluginId, handler }): void {
-	notePostInterruptors.push({
-		handler: async (note) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			return utils.valToJs(await pluginContext.execFn(handler, [utils.jsToVal(note)]));
-		},
-	});
-}
-
-function registerPageViewInterruptor({ pluginId, handler }): void {
-	pageViewInterruptors.push({
-		handler: async (page) => {
-			const pluginContext = pluginContexts.get(pluginId);
-			if (!pluginContext) {
-				return;
-			}
-			return utils.valToJs(await pluginContext.execFn(handler, [utils.jsToVal(page)]));
-		},
-	});
+export function getPluginHandlers<K extends keyof HandlerDef>(type: K): HandlerDef[K][] {
+	return pluginHandlers.filter((x): x is PluginHandler<K> => x.type === type).map(x => x.ctx);
 }
