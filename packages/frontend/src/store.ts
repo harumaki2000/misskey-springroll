@@ -57,11 +57,14 @@ export const store = markRaw(new Storage('base', {
 	},
 	counter: {
 		where: 'account',
-		default: [] as string [],
+		default: '0',
 	},
 	todoList: {
 		where: 'account',
-		default: [] as string [],
+		default: [] as {
+			text: string;
+			completed: boolean;
+		}[],
 	},
 
 	visibility: {

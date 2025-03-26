@@ -33,7 +33,7 @@ import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps 
 import type { GetFormResultType } from '@/scripts/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
 import MkButton from '@/components/MkButton.vue';
 
 const name = 'todoList';
@@ -61,7 +61,7 @@ interface Task {
 	completed: boolean;
 }
 
-const tasks = ref<Task[]>(defaultStore.state.todoList || []);
+const tasks = ref<Task[]>(store.s.todoList);
 const newTask = ref('');
 let timeoutId: number | null = null;
 
@@ -74,7 +74,7 @@ const addTask = (): void => {
 };
 
 const saveList = () => {
-	defaultStore.set('todoList', tasks.value);
+	store.set('todoList', tasks.value);
 };
 
 const onChange = () => {
@@ -82,7 +82,7 @@ const onChange = () => {
 	timeoutId = window.setTimeout(saveList, 1000);
 };
 
-watch(() => defaultStore.reactiveState.todoList, (newTasks) => {
+watch(() => store.r.todoList, (newTasks) => {
 	tasks.value = newTasks;
 });
 
