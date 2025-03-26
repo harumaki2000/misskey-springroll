@@ -37,6 +37,40 @@ export type AiScriptPluginMeta = {
 	config?: Record<string, any>;
 };
 
+interface PostFormAction {
+	title: string,
+	handler: <T>(form: T, update: (key: unknown, value: unknown) => void) => void;
+}
+
+interface UserAction {
+	title: string,
+	handler: (user: Misskey.entities.UserDetailed) => void;
+}
+
+interface NoteAction {
+	title: string,
+	handler: (note: Misskey.entities.Note) => void;
+}
+
+interface NoteViewInterruptor {
+	handler: (note: Misskey.entities.Note) => unknown;
+}
+
+interface NotePostInterruptor {
+	handler: (note: FIXME) => unknown;
+}
+
+interface PageViewInterruptor {
+	handler: (page: Misskey.entities.Page) => unknown;
+}
+
+export const postFormActions: PostFormAction[] = [];
+export const userActions: UserAction[] = [];
+export const noteActions: NoteAction[] = [];
+export const noteViewInterruptors: NoteViewInterruptor[] = [];
+export const notePostInterruptors: NotePostInterruptor[] = [];
+export const pageViewInterruptors: PageViewInterruptor[] = [];
+
 const parser = new Parser();
 
 export function isSupportedAiScriptVersion(version: string): boolean {
