@@ -22,13 +22,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/scripts/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
 import MkButton from '@/components/MkButton.vue';
 
 const name = 'counter';
@@ -51,7 +51,7 @@ const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
 const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
 
-const clickCount = ref(0);
+const clickCount = ref(Number(store.s.counter));
 const changed = ref(false);
 let timeoutId;
 
@@ -71,7 +71,7 @@ const reset = () => {
 };
 
 const saveCounter = () => {
-	defaultStore.set('counter', String(clickCount.value));
+	store.set('counter', String(clickCount.value));
 	changed.value = false;
 };
 
@@ -81,13 +81,7 @@ const onChange = () => {
 	timeoutId = window.setTimeout(saveCounter, 1000);
 };
 
-onMounted(() => {
-	if (defaultStore.state.counter) {
-		clickCount.value = Number(defaultStore.state.counter);
-	}
-});
-
-watch(() => defaultStore.reactiveState.counter, newText => {
+watch(() => store.r.counter, newText => {
 	if (newText.value !== String(clickCount.value)) {
 		clickCount.value = Number(newText.value);
 	}
