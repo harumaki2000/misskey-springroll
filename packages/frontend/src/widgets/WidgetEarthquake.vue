@@ -110,6 +110,7 @@ const connectWebSocket = () => {
 	ws.onopen = () => {
 		console.log('WebSocket 接続確立');
 		showLoadingTemporarily();
+		ws?.send('query_jmaeqlist');
 	};
 
 	ws.onmessage = (event) => {
@@ -121,13 +122,7 @@ const connectWebSocket = () => {
 				return;
 			}
 
-			if (Object.keys(data).length === 0 || !data.data || !data.data.No1) {
-				console.warn('データが空です:', data);
-				earthquakeData.value.value = null;
-				showLoadingTemporarily();
-				return;
-			}
-
+			if (data.type === 'query_jmaeqlist' && data.data?.No1) {
 			const latestEarthquake = data.data.No1 as EarthquakeData;
 
 			const newEarthquakeData: EarthquakeData = {
@@ -141,15 +136,18 @@ const connectWebSocket = () => {
 				md5: latestEarthquake.md5,
 			};
 
-			if (JSON.stringify(earthquakeData.value) === JSON.stringify(newEarthquakeData)) {
-				return;
+			if (JSON.stringify(earthquakeData.value) !== JSON.stringify(newEarthquakeData)) {
+				earthquakeData.value.value = newEarthquakeData;
+				showLoadingTemporarily();
 			}
-
-			earthquakeData.value.value = newEarthquakeData;
+		} else {
+			console.warn('データが空です:', data);
+			earthquakeData.value.value = null;
 			showLoadingTemporarily();
-		} catch (error) {
-			console.error('WebSocket データ解析エラー:', error);
 		}
+	} catch (error) {
+		console.error('WebSocket データ解析エラー:', error);
+	}
 	};
 
 	ws.onerror = (error) => {
