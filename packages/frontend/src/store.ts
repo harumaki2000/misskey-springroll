@@ -112,13 +112,13 @@ export const store = markRaw(new Storage('base', {
 		where: 'device',
 		default: {} as Record<string, Record<string, string[]>>,
 	},
-	defaultWithReplies: {
-		where: 'account',
-		default: false,
-	},
 	pluginTokens: {
 		where: 'deviceAccount',
 		default: {} as Record<string, string>, // plugin id, token
+	},
+	accountTokens: {
+		where: 'device',
+		default: {} as Record<string, string>, // host/userId, token
 	},
 
 	enablePreferencesAutoCloudBackup: {
@@ -131,6 +131,10 @@ export const store = markRaw(new Storage('base', {
 	},
 
 	//#region TODO: そのうち消す (preferに移行済み)
+	defaultWithReplies: {
+		where: 'account',
+		default: false,
+	},
 	reactions: {
 		where: 'account',
 		default: ['👍', '❤️', '😆', '🤔', '😮', '🎉', '💢', '😥', '😇', '🍮'],
