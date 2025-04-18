@@ -10,7 +10,7 @@ class Systemd {
 		this.tty_dom = document.querySelector('#tty');
 		const welcome = document.createElement('div');
 		welcome.className = 'tty-line';
-		welcome.innerText = `misskey2000 ${version} running in Web mode. cmdline: ${cmdline}`;
+		welcome.innerText = `misskey-springroll ${version} running in Web mode. cmdline: ${cmdline}`;
 		this.tty_dom.appendChild(welcome);
 	}
 	async start(id, promise) {
