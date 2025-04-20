@@ -58,7 +58,6 @@ export const store = markRaw(new Storage('base', {
 			completed: boolean;
 		}[],
 	},
-
 	visibility: {
 		where: 'deviceAccount',
 		default: 'public' as (typeof Misskey.noteVisibilities)[number],
