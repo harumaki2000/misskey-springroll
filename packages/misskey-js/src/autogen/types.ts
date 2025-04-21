@@ -1430,6 +1430,15 @@ export type paths = {
      */
     post: operations['chat___messages___show'];
   };
+  '/chat/messages/unreact': {
+    /**
+     * chat/messages/unreact
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:chat*
+     */
+    post: operations['chat___messages___unreact'];
+  };
   '/chat/messages/user-timeline': {
     /**
      * chat/messages/user-timeline
@@ -1483,6 +1492,15 @@ export type paths = {
      * **Credential required**: *Yes* / **Permission**: *read:chat*
      */
     post: operations['chat___rooms___invitations___inbox'];
+  };
+  '/chat/rooms/invitations/outbox': {
+    /**
+     * chat/rooms/invitations/outbox
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:chat*
+     */
+    post: operations['chat___rooms___invitations___outbox'];
   };
   '/chat/rooms/join': {
     /**
@@ -4039,6 +4057,7 @@ export type components = {
       followersVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
       chatScope: 'everyone' | 'following' | 'followers' | 'mutual' | 'none';
+      canChat: boolean;
       roles: components['schemas']['RoleLite'][];
       followedMessage?: string | null;
       memo: string | null;
@@ -4184,6 +4203,15 @@ export type components = {
           userListId: string;
         }]>;
         roleAssigned?: OneOf<[{
+          /** @enum {string} */
+          type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+        }, {
+          /** @enum {string} */
+          type: 'list';
+          /** Format: misskey:id */
+          userListId: string;
+        }]>;
+        chatRoomInvitationReceived?: OneOf<[{
           /** @enum {string} */
           type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
         }, {
@@ -4529,6 +4557,14 @@ export type components = {
       /** @enum {string} */
       type: 'roleAssigned';
       role: components['schemas']['Role'];
+    } | {
+      /** Format: id */
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      type: 'chatRoomInvitationReceived';
+      invitation: components['schemas']['ChatRoomInvitation'];
     } | ({
       /** Format: id */
       id: string;
@@ -4862,6 +4898,8 @@ export type components = {
       hasUnreadNote: boolean;
       /** @default false */
       notify: boolean;
+      /** @default false */
+      excludeNotesInSensitiveChannel: boolean;
     };
     Clip: {
       /**
@@ -5097,6 +5135,8 @@ export type components = {
       /** @example false */
       asBadge: boolean;
       /** @example false */
+      preserveAssignmentOnMoveAccount: boolean;
+      /** @example false */
       canEditMembersByModerator: boolean;
       policies: {
         [key: string]: {
@@ -5139,7 +5179,8 @@ export type components = {
       canImportFollowing: boolean;
       canImportMuting: boolean;
       canImportUserLists: boolean;
-      canChat: boolean;
+      /** @enum {string} */
+      chatAvailability: 'available' | 'readonly' | 'unavailable';
     };
     ReversiGameLite: {
       /** Format: id */
@@ -5273,6 +5314,21 @@ export type components = {
       enableEmail: boolean;
       enableServiceWorker: boolean;
       translatorAvailable: boolean;
+      sentryForFrontend: ({
+        options: {
+          dsn: string;
+          [key: string]: unknown;
+        };
+        vueIntegration?: {
+          [key: string]: unknown;
+        } | null;
+        browserTracingIntegration?: {
+          [key: string]: unknown;
+        } | null;
+        replayIntegration?: {
+          [key: string]: unknown;
+        } | null;
+      }) | null;
       mediaProxy: string;
       enableUrlPreview: boolean;
       backgroundImageUrl: string | null;
@@ -5353,10 +5409,10 @@ export type components = {
       fileId?: string | null;
       file?: components['schemas']['DriveFile'] | null;
       isRead?: boolean;
-      reactions: ({
+      reactions: {
           reaction: string;
-          user?: components['schemas']['UserLite'] | null;
-        })[];
+          user: components['schemas']['UserLite'];
+        }[];
     };
     ChatMessageLite: {
       id: string;
@@ -5373,6 +5429,34 @@ export type components = {
           reaction: string;
           user?: components['schemas']['UserLite'] | null;
         })[];
+    };
+    ChatMessageLiteFor1on1: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      fromUserId: string;
+      toUserId: string;
+      text?: string | null;
+      fileId?: string | null;
+      file?: components['schemas']['DriveFile'] | null;
+      reactions: {
+          reaction: string;
+        }[];
+    };
+    ChatMessageLiteForRoom: {
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      fromUserId: string;
+      fromUser: components['schemas']['UserLite'];
+      toRoomId: string;
+      text?: string | null;
+      fileId?: string | null;
+      file?: components['schemas']['DriveFile'] | null;
+      reactions: {
+          reaction: string;
+          user: components['schemas']['UserLite'];
+        }[];
     };
     ChatRoom: {
       id: string;
@@ -9311,6 +9395,7 @@ export type operations = {
           /** @default false */
           isExplorable?: boolean;
           asBadge: boolean;
+          preserveAssignmentOnMoveAccount?: boolean;
           canEditMembersByModerator: boolean;
           displayOrder: number;
           policies: Record<string, never>;
@@ -9586,6 +9671,7 @@ export type operations = {
           isAdministrator?: boolean;
           isExplorable?: boolean;
           asBadge?: boolean;
+          preserveAssignmentOnMoveAccount?: boolean;
           canEditMembersByModerator?: boolean;
           displayOrder?: number;
           policies?: Record<string, never>;
@@ -10067,6 +10153,15 @@ export type operations = {
                 userListId: string;
               }]>;
               roleAssigned?: OneOf<[{
+                /** @enum {string} */
+                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+              }, {
+                /** @enum {string} */
+                type: 'list';
+                /** Format: misskey:id */
+                userListId: string;
+              }]>;
+              chatRoomInvitationReceived?: OneOf<[{
                 /** @enum {string} */
                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
               }, {
@@ -11245,6 +11340,7 @@ export type operations = {
           excludeBots?: boolean;
           withReplies: boolean;
           withFile: boolean;
+          excludeNotesInSensitiveChannel?: boolean;
         };
       };
     };
@@ -11526,6 +11622,7 @@ export type operations = {
           excludeBots?: boolean;
           withReplies?: boolean;
           withFile?: boolean;
+          excludeNotesInSensitiveChannel?: boolean;
         };
       };
     };
@@ -14003,7 +14100,7 @@ export type operations = {
       /** @description OK (with results) */
       200: {
         content: {
-          'application/json': components['schemas']['ChatMessageLite'];
+          'application/json': components['schemas']['ChatMessageLiteForRoom'];
         };
       };
       /** @description Client error */
@@ -14066,7 +14163,7 @@ export type operations = {
       /** @description OK (with results) */
       200: {
         content: {
-          'application/json': components['schemas']['ChatMessageLite'];
+          'application/json': components['schemas']['ChatMessageLiteFor1on1'];
         };
       };
       /** @description Client error */
@@ -14241,7 +14338,7 @@ export type operations = {
       /** @description OK (with results) */
       200: {
         content: {
-          'application/json': components['schemas']['ChatMessageLite'][];
+          'application/json': components['schemas']['ChatMessageLiteForRoom'][];
         };
       };
       /** @description Client error */
@@ -14390,6 +14487,61 @@ export type operations = {
     };
   };
   /**
+   * chat/messages/unreact
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:chat*
+   */
+  chat___messages___unreact: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          messageId: string;
+          reaction: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
    * chat/messages/user-timeline
    * @description No description provided.
    *
@@ -14414,7 +14566,7 @@ export type operations = {
       /** @description OK (with results) */
       200: {
         content: {
-          'application/json': components['schemas']['ChatMessageLite'][];
+          'application/json': components['schemas']['ChatMessageLiteFor1on1'][];
         };
       };
       /** @description Client error */
@@ -14689,6 +14841,66 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** @default 30 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['ChatRoomInvitation'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * chat/rooms/invitations/outbox
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:chat*
+   */
+  chat___rooms___invitations___outbox: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          roomId: string;
           /** @default 30 */
           limit?: number;
           /** Format: misskey:id */
@@ -21504,8 +21716,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -21572,8 +21784,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -22661,6 +22873,15 @@ export type operations = {
               userListId: string;
             }]>;
             roleAssigned?: OneOf<[{
+              /** @enum {string} */
+              type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+            }, {
+              /** @enum {string} */
+              type: 'list';
+              /** Format: misskey:id */
+              userListId: string;
+            }]>;
+            chatRoomInvitationReceived?: OneOf<[{
               /** @enum {string} */
               type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
             }, {
