@@ -3935,6 +3935,10 @@ export interface Locale extends ILocale {
      */
     "logoutConfirm": string;
     /**
+     * ログアウトするとクライアントの設定情報がブラウザから消去されます。再ログイン時に設定情報を復元できるようにするためには、設定の自動バックアップを有効にしてください。
+     */
+    "logoutWillClearClientData": string;
+    /**
      * 最終利用日時
      */
     "lastActiveDate": string;
@@ -5394,6 +5398,10 @@ export interface Locale extends ILocale {
      * デッキへ戻る
      */
     "goToDeck": string;
+    /**
+     * 連合ジョブ
+     */
+    "federationJobs": string;
     "_chat": {
         /**
          * まだメッセージはありません
@@ -9204,6 +9212,10 @@ export interface Locale extends ILocale {
          */
         "birthdayFollowings": string;
         /**
+         * チャット
+         */
+        "chat": string;
+        /**
          * カウンター
          */
         "counter": string;
@@ -10238,6 +10250,10 @@ export interface Locale extends ILocale {
              * ロールタイムライン
              */
             "roleTimeline": string;
+            /**
+             * チャット
+             */
+            "chat": string;
         };
     };
     "_dialog": {
