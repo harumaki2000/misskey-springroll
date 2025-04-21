@@ -363,6 +363,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: false, optional: false,
 			enum: ['everyone', 'following', 'followers', 'mutual', 'none'],
 		},
+		canChat: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		roles: {
 			type: 'array',
 			nullable: false, optional: false,
@@ -608,6 +612,7 @@ export const packedMeDetailedOnlySchema = {
 				receiveFollowRequest: { optional: true, ...notificationRecieveConfig },
 				followRequestAccepted: { optional: true, ...notificationRecieveConfig },
 				roleAssigned: { optional: true, ...notificationRecieveConfig },
+				chatRoomInvitationReceived: { optional: true, ...notificationRecieveConfig },
 				achievementEarned: { optional: true, ...notificationRecieveConfig },
 				app: { optional: true, ...notificationRecieveConfig },
 				test: { optional: true, ...notificationRecieveConfig },
