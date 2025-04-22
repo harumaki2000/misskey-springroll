@@ -14,14 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</template>
 	<div class="$style.root">
 		<MkLoading v-if="fetching"></MkLoading>
-		<div v-if="earthquakeData.value">
-			<p>{{ earthquakeData.value.Title }}</p>
-			<p>発生時刻: {{ earthquakeData.value.time_full }}</p>
-			<p>震源地: {{ earthquakeData.value.location }}</p>
-			<p>最大震度: {{ formatShindo(earthquakeData.value.shindo) }}</p>
-			<p>マグニチュード: {{ earthquakeData.value.magnitude }}</p>
-			<p>震源の深さ: {{ earthquakeData.value.depth }}</p>
-			<p>{{ earthquakeData.value.info }}</p>
+		<div v-if="earthquakeData && earthquakeData.Title">
+			<p>{{ earthquakeData.Title }}</p>
+			<p>発生時刻: {{ earthquakeData.time_full }}</p>
+			<p>震源地: {{ earthquakeData.location }}</p>
+			<p>最大震度: {{ formatShindo(earthquakeData.shindo) }}</p>
+			<p>マグニチュード: {{ earthquakeData.magnitude }}</p>
+			<p>震源の深さ: {{ earthquakeData.depth }}</p>
+			<p>{{ earthquakeData.info }}</p>
 		</div>
 		<p v-else>現在、地震情報はありません。</p>
 	</div>
@@ -33,6 +33,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/scripts/form.js';
+import type { Num } from '@syuilo/aiscript/parser/node.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
 
@@ -64,17 +65,17 @@ interface EarthquakeData {
 	magnitude: string;
 	depth: string;
 	info: string;
-	md5: string;
 }
 
-const earthquakeData = ref<{ value: EarthquakeData | null }>({ value: null });
+const earthquakeData = ref<EarthquakeData | null >(null);
 const fetching = ref(false);
 let ws: WebSocket | null = null;
 let reconnecting = ref(false);
+let clearTimer: number | null = null;
 
 const showLoadingTemporarily = () => {
 	fetching.value = true;
-	setTimeout(() => {
+	window.setTimeout(() => {
 		fetching.value = false;
 	}, 1000);
 };
@@ -105,6 +106,7 @@ const connectWebSocket = () => {
 		ws.close();
 	}
 
+	//ws = new WebSocket('ws//localhost:8765'); // テスト用
 	ws = new WebSocket('wss://ws-api.wolfx.jp/jma_eqlist');
 
 	ws.onopen = () => {
@@ -122,32 +124,38 @@ const connectWebSocket = () => {
 				return;
 			}
 
-			if (data.type === 'query_jmaeqlist' && data.data?.No1) {
-			const latestEarthquake = data.data.No1 as EarthquakeData;
+			if (data.type === 'jma_eqlist' && data.data?.No1) {
+				const latestEarthquake = data.data.No1;
 
-			const newEarthquakeData: EarthquakeData = {
-				Title: latestEarthquake.Title,
-				time_full: latestEarthquake.time_full,
-				location: latestEarthquake.location,
-				shindo: latestEarthquake.shindo,
-				magnitude: latestEarthquake.magnitude,
-				depth: latestEarthquake.depth,
-				info: latestEarthquake.info,
-				md5: latestEarthquake.md5,
-			};
+				const newEarthquakeData: EarthquakeData = {
+					Title: latestEarthquake.Title,
+					time_full: latestEarthquake.time_full,
+					location: latestEarthquake.location,
+					shindo: latestEarthquake.shindo,
+					magnitude: latestEarthquake.magnitude,
+					depth: latestEarthquake.depth,
+					info: latestEarthquake.info,
+				};
 
-			if (JSON.stringify(earthquakeData.value) !== JSON.stringify(newEarthquakeData)) {
-				earthquakeData.value.value = newEarthquakeData;
+				earthquakeData.value = newEarthquakeData;
+				showLoadingTemporarily();
+
+				if (clearTimer !== null) {
+					window.clearTimeout(clearTimer);
+				}
+
+				clearTimer = window.setTimeout(() => {
+					earthquakeData.value = null;
+					clearTimer = null;
+				}, 5 * 60 * 1000);
+			} else {
+				console.warn('データが空です:', data);
+				earthquakeData.value = null;
 				showLoadingTemporarily();
 			}
-		} else {
-			console.warn('データが空です:', data);
-			earthquakeData.value.value = null;
-			showLoadingTemporarily();
+		} catch (error) {
+			console.error('WebSocket データ解析エラー:', error);
 		}
-	} catch (error) {
-		console.error('WebSocket データ解析エラー:', error);
-	}
 	};
 
 	ws.onerror = (error) => {
@@ -158,7 +166,7 @@ const connectWebSocket = () => {
 	ws.onclose = () => {
 		console.log('WebSocket 切断');
 		if (!reconnecting.value) {
-			setTimeout(connectWebSocket, 5000);
+			window.setTimeout(connectWebSocket, 5000);
 		}
 	};
 };
