@@ -33,7 +33,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/scripts/form.js';
-import type { Num } from '@syuilo/aiscript/parser/node.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
 
@@ -106,7 +105,7 @@ const connectWebSocket = () => {
 		ws.close();
 	}
 
-	//ws = new WebSocket('ws//localhost:8765'); // テスト用
+	// ws = new WebSocket('ws://localhost:8765'); // テスト用
 	ws = new WebSocket('wss://ws-api.wolfx.jp/jma_eqlist');
 
 	ws.onopen = () => {
@@ -124,8 +123,8 @@ const connectWebSocket = () => {
 				return;
 			}
 
-			if (data.type === 'jma_eqlist' && data.data?.No1) {
-				const latestEarthquake = data.data.No1;
+			if (data.type === 'jma_eqlist' && data.No1) {
+				const latestEarthquake = data.No1;
 
 				const newEarthquakeData: EarthquakeData = {
 					Title: latestEarthquake.Title,
