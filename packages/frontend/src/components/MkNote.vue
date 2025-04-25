@@ -131,6 +131,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.reactionCount) }}</p>
 				</button>
+				<button :class="$style.footerButton" class="_button" @click="toggleFavorite">
+					<i v-if="isFavorited" class="ti ti-star" style="color: gold;"></i>
+					<i v-else class="ti ti-star"></i>
+				</button>
 				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
 					<i class="ti ti-paperclip"></i>
 				</button>
@@ -238,6 +242,8 @@ provide(DI.mock, props.mock);
 const emit = defineEmits<{
 	(ev: 'reaction', emoji: string): void;
 	(ev: 'removeReaction', emoji: string): void;
+	(ev: 'favorite', payload: { isFavorited: boolean }): void;
+	(ev: 'unfavorite', payload: { isFavorited: boolean }): void;
 }>();
 
 const inTimeline = inject<boolean>('inTimeline', false);
@@ -274,6 +280,7 @@ const menuButton = useTemplateRef('menuButton');
 const renoteButton = useTemplateRef('renoteButton');
 const renoteTime = useTemplateRef('renoteTime');
 const reactButton = useTemplateRef('reactButton');
+const isFavorited = computed(() => favorited.value === true);
 const clipButton = useTemplateRef('clipButton');
 const appearNote = computed(() => getAppearNote(note.value));
 const galleryEl = useTemplateRef('galleryEl');
@@ -543,6 +550,43 @@ function toggleReact() {
 		undoReact(appearNote.value);
 	}
 }
+
+const favorited = ref<boolean | null>(null);
+
+function toggleFavorite():void {
+	sound.playMisskeySfx('reaction');
+	const targetNote = appearNote.value;
+	if (!targetNote) {
+		return;
+	}
+	if (favorited.value === null || favorited.value === false ) {
+		if (props.mock) {
+			emit('favorite', { isFavorited: true });
+			favorited.value = true;
+			return;
+		}
+		misskeyApi('notes/favorites/create', {
+			noteId: appearNote.value.id,
+		});
+		favorited.value = true;
+	} else {
+		if (props.mock) {
+			emit('unfavorite', { isFavorited: false });
+			favorited.value = false;
+			return;
+		}
+		misskeyApi('notes/favorites/delete', {
+			noteId: targetNote.id,
+		});
+		favorited.value = false;
+	}
+}
+
+onMounted(() => {
+	if (appearNote.value && appearNote.value.favorited != null) {
+		favorited.value = appearNote.value.favorited;
+	}
+});
 
 function onContextmenu(ev: MouseEvent): void {
 	if (props.mock) {
