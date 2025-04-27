@@ -149,6 +149,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i v-else class="ti ti-plus"></i>
 				<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.noteFooterButtonCount">{{ number(appearNote.reactionCount) }}</p>
 			</button>
+			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @mousedown="heartReact()">
+				<i class="ti ti-star"></i>
+			</button>
 			<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" class="_button" :class="$style.noteFooterButton" @mousedown.prevent="clip()">
 				<i class="ti ti-paperclip"></i>
 			</button>
@@ -480,6 +483,18 @@ function react(): void {
 			focus();
 		});
 	}
+}
+
+function heartReact():void {
+	sound.playMisskeySfx('reaction');
+	const targetNote = appearNote.value;
+	if (!targetNote) {
+		return;
+	}
+	misskeyApi('notes/reactions/create', {
+		noteId: appearNote.value.id,
+		reaction: '🩵',
+	});
 }
 
 function undoReact(targetNote: Misskey.entities.Note): void {
