@@ -75,9 +75,15 @@ import type {
 	AdminInviteListResponse,
 	AdminMetaResponse,
 	AdminPromoCreateRequest,
+	AdminQueueClearRequest,
 	AdminQueueDeliverDelayedResponse,
 	AdminQueueInboxDelayedResponse,
-	AdminQueuePromoteRequest,
+	AdminQueueJobsRequest,
+	AdminQueuePromoteJobsRequest,
+	AdminQueueQueueStatsRequest,
+	AdminQueueRemoveJobRequest,
+	AdminQueueRetryJobRequest,
+	AdminQueueShowJobRequest,
 	AdminQueueStatsResponse,
 	AdminRelaysAddRequest,
 	AdminRelaysAddResponse,
@@ -223,6 +229,8 @@ import type {
 	ChatMessagesSearchResponse,
 	ChatMessagesShowRequest,
 	ChatMessagesShowResponse,
+	ChatMessagesUnreactRequest,
+	ChatMessagesUnreactResponse,
 	ChatMessagesUserTimelineRequest,
 	ChatMessagesUserTimelineResponse,
 	ChatRoomsCreateRequest,
@@ -235,6 +243,8 @@ import type {
 	ChatRoomsInvitationsIgnoreResponse,
 	ChatRoomsInvitationsInboxRequest,
 	ChatRoomsInvitationsInboxResponse,
+	ChatRoomsInvitationsOutboxRequest,
+	ChatRoomsInvitationsOutboxResponse,
 	ChatRoomsJoinRequest,
 	ChatRoomsJoinResponse,
 	ChatRoomsJoiningRequest,
@@ -686,10 +696,16 @@ export type Endpoints = {
 	'admin/invite/list': { req: AdminInviteListRequest; res: AdminInviteListResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
-	'admin/queue/clear': { req: EmptyRequest; res: EmptyResponse };
+	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };
 	'admin/queue/deliver-delayed': { req: EmptyRequest; res: AdminQueueDeliverDelayedResponse };
 	'admin/queue/inbox-delayed': { req: EmptyRequest; res: AdminQueueInboxDelayedResponse };
-	'admin/queue/promote': { req: AdminQueuePromoteRequest; res: EmptyResponse };
+	'admin/queue/jobs': { req: AdminQueueJobsRequest; res: EmptyResponse };
+	'admin/queue/promote-jobs': { req: AdminQueuePromoteJobsRequest; res: EmptyResponse };
+	'admin/queue/queue-stats': { req: AdminQueueQueueStatsRequest; res: EmptyResponse };
+	'admin/queue/queues': { req: EmptyRequest; res: EmptyResponse };
+	'admin/queue/remove-job': { req: AdminQueueRemoveJobRequest; res: EmptyResponse };
+	'admin/queue/retry-job': { req: AdminQueueRetryJobRequest; res: EmptyResponse };
+	'admin/queue/show-job': { req: AdminQueueShowJobRequest; res: EmptyResponse };
 	'admin/queue/stats': { req: EmptyRequest; res: AdminQueueStatsResponse };
 	'admin/relays/add': { req: AdminRelaysAddRequest; res: AdminRelaysAddResponse };
 	'admin/relays/list': { req: EmptyRequest; res: AdminRelaysListResponse };
@@ -778,12 +794,14 @@ export type Endpoints = {
 	'chat/messages/room-timeline': { req: ChatMessagesRoomTimelineRequest; res: ChatMessagesRoomTimelineResponse };
 	'chat/messages/search': { req: ChatMessagesSearchRequest; res: ChatMessagesSearchResponse };
 	'chat/messages/show': { req: ChatMessagesShowRequest; res: ChatMessagesShowResponse };
+	'chat/messages/unreact': { req: ChatMessagesUnreactRequest; res: ChatMessagesUnreactResponse };
 	'chat/messages/user-timeline': { req: ChatMessagesUserTimelineRequest; res: ChatMessagesUserTimelineResponse };
 	'chat/rooms/create': { req: ChatRoomsCreateRequest; res: ChatRoomsCreateResponse };
 	'chat/rooms/delete': { req: ChatRoomsDeleteRequest; res: ChatRoomsDeleteResponse };
 	'chat/rooms/invitations/create': { req: ChatRoomsInvitationsCreateRequest; res: ChatRoomsInvitationsCreateResponse };
 	'chat/rooms/invitations/ignore': { req: ChatRoomsInvitationsIgnoreRequest; res: ChatRoomsInvitationsIgnoreResponse };
 	'chat/rooms/invitations/inbox': { req: ChatRoomsInvitationsInboxRequest; res: ChatRoomsInvitationsInboxResponse };
+	'chat/rooms/invitations/outbox': { req: ChatRoomsInvitationsOutboxRequest; res: ChatRoomsInvitationsOutboxResponse };
 	'chat/rooms/join': { req: ChatRoomsJoinRequest; res: ChatRoomsJoinResponse };
 	'chat/rooms/joining': { req: ChatRoomsJoiningRequest; res: ChatRoomsJoiningResponse };
 	'chat/rooms/leave': { req: ChatRoomsLeaveRequest; res: ChatRoomsLeaveResponse };

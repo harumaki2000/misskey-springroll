@@ -14,8 +14,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<MkNoteSub v-if="appearNote.reply && !renoteCollapsed" :note="appearNote.reply" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
-	<!--<div v-if="appearNote._prId_" class="tip"><i class="ti ti-speakerphone"></i> {{ i18n.ts.promotion }}<button class="_textButton hide" @click="readPromo()">{{ i18n.ts.hideThisNote }} <i class="ti ti-x"></i></button></div>-->
-	<!--<div v-if="appearNote._featuredId_" class="tip"><i class="ti ti-bolt"></i> {{ i18n.ts.featured }}</div>-->
 	<div v-if="isRenote" :class="$style.renote">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
 		<MkAvatar :class="$style.renoteAvatar" :user="note.user" link preview/>
@@ -47,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<article v-else :class="$style.article" @contextmenu.stop="onContextmenu">
 		<div v-if="appearNote.channel" :class="$style.colorBar" :style="{ background: appearNote.channel.color }"></div>
-		<MkAvatar :class="$style.avatar" :user="appearNote.user" :link="!mock" :preview="!mock"/>
+		<MkAvatar :class="[$style.avatar, prefer.s.useStickyIcons ? $style.useSticky : null]" :user="appearNote.user" :link="!mock" :preview="!mock"/>
 		<div :class="$style.main">
 			<MkNoteHeader :note="appearNote" :mini="true"/>
 			<MkInstanceTicker v-if="showTicker" :host="appearNote.user.host" :instance="appearNote.user.instance"/>
@@ -132,6 +130,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.reactionCount) }}</p>
+				</button>
+				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @mousedown="heartReact()">
+					<i class="ti ti-star"></i>
 				</button>
 				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
 					<i class="ti ti-paperclip"></i>
@@ -240,6 +241,8 @@ provide(DI.mock, props.mock);
 const emit = defineEmits<{
 	(ev: 'reaction', emoji: string): void;
 	(ev: 'removeReaction', emoji: string): void;
+	(ev: 'favorite', payload: { isFavorited: boolean }): void;
+	(ev: 'unfavorite', payload: { isFavorited: boolean }): void;
 }>();
 
 const inTimeline = inject<boolean>('inTimeline', false);
@@ -379,7 +382,8 @@ const keymap = {
 	},
 } as const satisfies Keymap;
 
-provide('react', (reaction: string) => {
+provide(DI.mfmEmojiReactCallback, (reaction) => {
+	sound.playMisskeySfx('reaction');
 	misskeyApi('notes/reactions/create', {
 		noteId: appearNote.value.id,
 		reaction: reaction,
@@ -523,6 +527,21 @@ function react(): void {
 	}
 }
 
+function heartReact():void {
+	sound.playMisskeySfx('reaction');
+	const targetNote = appearNote.value;
+	if (!targetNote) {
+		return;
+	}
+	if (props.mock) {
+		return;
+	}
+	misskeyApi('notes/reactions/create', {
+		noteId: appearNote.value.id,
+		reaction: '🩵',
+	});
+}
+
 function undoReact(targetNote: Misskey.entities.Note): void {
 	const oldReaction = targetNote.myReaction;
 	if (!oldReaction) return;
@@ -659,7 +678,6 @@ function emitUpdReaction(emoji: string, delta: number) {
 <style lang="scss" module>
 .root {
 	position: relative;
-	transition: box-shadow 0.1s ease;
 	font-size: 1.05em;
 	overflow: clip;
 	contain: content;
@@ -725,6 +743,8 @@ function emitUpdReaction(emoji: string, delta: number) {
 }
 
 .skipRender {
+	// TODO: これが有効だとTransitionGroupでnoteを追加するときに一瞬がくっとなってしまうのをどうにかしたい
+	// Transitionが完了するのを待ってからskipRenderを付与すれば解決しそうだけどパフォーマンス的な影響が不明
 	content-visibility: auto;
 	contain-intrinsic-size: 0 150px;
 }
@@ -851,9 +871,12 @@ function emitUpdReaction(emoji: string, delta: number) {
 	margin: 0 14px 0 0;
 	width: 58px;
 	height: 58px;
-	position: sticky !important;
-	top: calc(22px + var(--MI-stickyTop, 0px));
-	left: 0;
+
+	&.useSticky {
+		position: sticky !important;
+		top: calc(22px + var(--MI-stickyTop, 0px));
+		left: 0;
+	}
 }
 
 .main {
@@ -1040,7 +1063,10 @@ function emitUpdReaction(emoji: string, delta: number) {
 		margin: 0 10px 0 0;
 		width: 46px;
 		height: 46px;
-		top: calc(14px + var(--MI-stickyTop, 0px));
+
+		&.useSticky {
+			top: calc(14px + var(--MI-stickyTop, 0px));
+		}
 	}
 }
 
