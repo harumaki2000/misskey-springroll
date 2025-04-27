@@ -85,6 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
 			<button v-tooltip="i18n.ts.emoji" :class="['_button', $style.footerButton]" @click="insertEmoji"><i class="ti ti-mood-happy"></i></button>
+			<button class="_button" :class="$style.footerButton" @click="toggleTimer"><i class="ti ti-stopwatch"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 		</div>
 		<div :class="$style.footerRight">
@@ -92,6 +93,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<!--<button v-tooltip="i18n.ts.more" class="_button" :class="$style.footerButton" @click="showingOptions = !showingOptions"><i class="ti ti-dots"></i></button>-->
 		</div>
 	</footer>
+	<div v-if="showTimer" style="margin-top: 8px;">
+		<input
+			v-model="expireInMinutes"
+			type="number"
+			min="1"
+			placeholder="この投稿を何分後に削除しますか？"
+			class="_input"
+			@input="updateExpireTime"
+		/>
+	</div>
 	<datalist id="hashtags">
 		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"/>
 	</datalist>
@@ -988,6 +999,17 @@ async function insertEmoji(ev: MouseEvent) {
 			nextTick(() => focus());
 		},
 	);
+}
+
+const showTimer = ref(false);
+const expireInMinutes = ref(null);
+
+function toggleTimer() {
+	showTimer.value = !showTimer.value;
+}
+
+function updateExpireTime(event) {
+	expireInMinutes.value = event.target.value;
 }
 
 async function insertMfmFunction(ev: MouseEvent) {
