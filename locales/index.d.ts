@@ -5402,6 +5402,34 @@ export interface Locale extends ILocale {
      * 連合ジョブ
      */
     "federationJobs": string;
+    /**
+     * ノートの自動削除
+     */
+    "autoDeleteNote": string;
+    /**
+     * 何分後に削除しますか
+     */
+    "customExpirationMinutes": string;
+    /**
+     * 30分
+     */
+    "minutes": string;
+    /**
+     * 1時間
+     */
+    "hour": string;
+    /**
+     * 1日
+     */
+    "day": string;
+    /**
+     * 1週間
+     */
+    "week": string;
+    /**
+     * カスタム
+     */
+    "custom": string;
     "_chat": {
         /**
          * まだメッセージはありません

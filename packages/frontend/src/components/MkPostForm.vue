@@ -85,7 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
 			<button v-tooltip="i18n.ts.emoji" :class="['_button', $style.footerButton]" @click="insertEmoji"><i class="ti ti-mood-happy"></i></button>
-			<button class="_button" :class="$style.footerButton" @click="toggleTimer"><i class="ti ti-stopwatch"></i></button>
+			<button v-tooltip="i18n.ts.autoDeleteNote" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: expiresAt !== null }]" @click="setExpirationTime"><i class="ti ti-stopwatch"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 		</div>
 		<div :class="$style.footerRight">
@@ -93,16 +93,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<!--<button v-tooltip="i18n.ts.more" class="_button" :class="$style.footerButton" @click="showingOptions = !showingOptions"><i class="ti ti-dots"></i></button>-->
 		</div>
 	</footer>
-	<div v-if="showTimer" style="margin-top: 8px;">
-		<input
-			v-model="expireInMinutes"
-			type="number"
-			min="1"
-			placeholder="この投稿を何分後に削除しますか？"
-			class="_input"
-			@input="updateExpireTime"
-		/>
-	</div>
 	<datalist id="hashtags">
 		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"/>
 	</datalist>
@@ -777,6 +767,7 @@ function saveDraft() {
 			localOnly: localOnly.value,
 			files: files.value,
 			poll: poll.value,
+			expiresAt: expiresAt.value,
 			visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
@@ -857,6 +848,7 @@ async function post(ev?: MouseEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
+		expiresAt: expiresAt.value,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -970,6 +962,65 @@ function insertMention() {
 	os.selectUser({ localOnly: localOnly.value, includeSelf: true }).then(user => {
 		insertTextAtCursor(textareaEl.value, '@' + Misskey.acct.toString(user) + ' ');
 	});
+}
+
+const expiresAt = ref<Date | null>(null);
+
+async function setExpirationTime() {
+	const { canceled, result } = await os.actions({
+		title: i18n.ts.autoDeleteNote,
+		actions: [
+			{
+				value: 'null',
+				text: i18n.ts.none,
+			},
+			{
+				value: '1000 * 60 * 30',
+				text: (i18n.ts.minutes as string).replace('{n}', '30'),
+			},
+			{
+				value: '1000 * 60 * 60',
+				text: i18n.ts.hour,
+			},
+			{
+				value: '1000 * 60 * 60 * 24',
+				text: i18n.ts.day,
+			},
+			{
+				value: '1000 * 60 * 60 * 24 * 7',
+				text: i18n.ts.week,
+			},
+			{
+				value: 'custom',
+				text: i18n.ts.custom,
+			},
+		],
+		default: expiresAt.value ? 'custom' : null,
+	});
+
+	if (canceled) return;
+
+	if (result === 'custom') {
+		const { canceled, result: minutes } = await os.inputText({
+			type: 'number',
+			text: i18n.ts.customExpirationMinutes,
+			placeholder: '30',
+			default: '30',
+		});
+
+		if (canceled) return;
+
+		if (minutes) {
+			const minutesNum = parseInt(minutes, 10);
+			if (!isNaN(minutesNum) && minutesNum > 0) {
+				expiresAt.value = new Date(Date.now() + (minutesNum * 60 * 1000));
+			}
+		}
+	} else if (result === null) {
+		expiresAt.value = null;
+	} else {
+		expiresAt.value = new Date(Date.now() + result);
+	}
 }
 
 async function insertEmoji(ev: MouseEvent) {

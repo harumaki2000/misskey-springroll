@@ -4,9 +4,13 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { error } from 'node:console';
+import { Inject, Injectable, Module } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
 import { parse as parseRedisInfo } from 'redis-info';
+import { LessThan } from 'typeorm';
+import * as Bull from 'bullmq';
+import Logger from '@/logger.js';
 import type { IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiWebhook, WebhookEventTypes } from '@/models/Webhook.js';
@@ -17,6 +21,8 @@ import { bindThis } from '@/decorators.js';
 import type { Antenna } from '@/server/api/endpoints/i/import-antennas.js';
 import { ApRequestCreator } from '@/core/activitypub/ApRequestService.js';
 import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import { MiNote } from '@/models/Note.js';
+import { type NotesRepository } from '@/models/_.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import type {
 	DbJobData,
@@ -38,7 +44,6 @@ import type {
 	UserWebhookDeliverQueue,
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
-import type * as Bull from 'bullmq';
 
 export const QUEUE_TYPES = [
 	'system',
@@ -54,9 +59,19 @@ export const QUEUE_TYPES = [
 
 @Injectable()
 export class QueueService {
+	public autoDeleteNoteQueue: Bull.Queue;
+	private autoDeleteNoteWorker: Bull.Worker;
+	private noteDeleteService: any;
+
+	async getNoteDeleteService() {
+		if (!this.noteDeleteService) {
+			this.noteDeleteService = (await import('@/core/NoteDeleteService.js')).NoteDeleteService;
+		}
+		return this.noteDeleteService;
+	}
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
+		@Inject(DI.config) private readonly logger: Logger,
+		@Inject(DI.config) private config: Config,
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
 		@Inject('queue:endedPollNotification') public endedPollNotificationQueue: EndedPollNotificationQueue,
@@ -67,6 +82,7 @@ export class QueueService {
 		@Inject('queue:objectStorage') public objectStorageQueue: ObjectStorageQueue,
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
+		@Inject(DI.notesRepository) private notesRepository: NotesRepository,
 	) {
 		this.systemQueue.add('tickCharts', {
 		}, {
@@ -123,6 +139,87 @@ export class QueueService {
 			repeat: { pattern: '30 * * * *' },
 			removeOnComplete: 10,
 			removeOnFail: 30,
+		});
+		this.logger = new Logger('autoDeleteNote');
+		this.autoDeleteNoteQueue = new Bull.Queue('autoDeleteNote', {
+			connection: this.config.redis,
+			prefix: 'queue',
+		});
+		this.autoDeleteNoteWorker = new Bull.Worker('autoDeleteNote', this.processAutoDeleteNote, {
+			connection: this.config.redis,
+			prefix: 'queue',
+		});
+	}
+
+	private async initialize() {
+		this.noteDeleteService = await this.noteDeleteService();
+	}
+
+	@bindThis
+	private async processAutoDeleteNote(job: Bull.Job<{ noteId: MiNote['id'] }>): Promise<void> {
+		const noteId = job.data.noteId;
+
+		try {
+			const note = await this.notesRepository.findOneOrFail({
+				where: { id: noteId },
+				relations: ['user'],
+			}) as MiNote;
+			await this.noteDeleteService.delete({
+				id: note.user!.id,
+				uri: note.user!.uri,
+				host: note.user!.host,
+				isBot: note.user!.isBot,
+			}, note);
+			this.logger.info(`Auto deleted note: ${noteId}`);
+		} catch (err) {
+			this.logger.error(`Error auto deleteing note ${noteId}:`, error);
+			throw err;
+		}
+	}
+
+	@bindThis
+	public async checkExpiredNotes(): Promise<void> {
+		const now = new Date();
+
+		const expiredNotes = await this.notesRepository.find({
+			where: {
+				expiresAt: LessThan(now),
+			},
+			select: ['id'],
+		});
+
+		this.logger.info(`Found ${expiredNotes.length} expired notes to delete`);
+
+		for (const note of expiredNotes) {
+			await this.autoDeleteNoteQueue.add(note.id, {
+				noteId: note.id,
+			});
+		}
+	}
+
+	@bindThis
+	public addAutoDeleteNoteJob(noteId: MiNote['id'], expiresAt: Date): void {
+		const delay = expiresAt.getTime() - Date.now();
+
+		if (delay <= 0) {
+			this.autoDeleteNoteQueue.add(noteId, {
+				noteId: noteId,
+			});
+			return;
+		}
+
+		this.autoDeleteNoteQueue.add(noteId, {
+			noteId: noteId,
+		}, {
+			delay,
+			removeOnComplete: {
+				age: 3600 * 24 * 7,
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7,
+				count: 100,
+			},
 		});
 	}
 
@@ -897,3 +994,8 @@ export class QueueService {
 		};
 	}
 }
+@Module({
+	imports: [Logger],
+	providers: [QueueService],
+})
+export class CoreModule {}

@@ -27,6 +27,13 @@ export const meta = {
 
 	prohibitMoved: true,
 
+	expiresAt: {
+		type: 'string',
+		format: 'date-time',
+		nullable: true,
+		default: null,
+	},
+
 	limit: {
 		duration: ms('1hour'),
 		max: 300,

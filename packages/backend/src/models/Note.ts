@@ -182,6 +182,11 @@ export class MiNote {
 	})
 	public hasPoll: boolean;
 
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public expiresAt: Date | null;
+
 	@Index()
 	@Column({
 		...id(),

@@ -296,7 +296,7 @@ export function actions<T extends {
 
 // default が指定されていたら result は null になり得ないことを保証する overload function
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -311,7 +311,7 @@ export function inputText(props: {
 }>;
 // min lengthが指定されてたら result は null になり得ないことを保証する overload function
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -325,7 +325,7 @@ export function inputText(props: {
 	canceled: false; result: string;
 }>;
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -339,7 +339,7 @@ export function inputText(props: {
 	canceled: false; result: string | null;
 }>;
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;

@@ -1346,6 +1346,13 @@ settingsMigrating: "設定を移行しています。しばらくお待ちくだ
 readonly: "読み取り専用"
 goToDeck: "デッキへ戻る"
 federationJobs: "連合ジョブ"
+autoDeleteNote: "ノートの自動削除"
+customExpirationMinutes: "何分後に削除しますか"
+minutes: "30分"
+hour: "1時間"
+day: "1日"
+week: "1週間"
+custom: "カスタム"
 
 _chat:
   noMessagesYet: "まだメッセージはありません"
