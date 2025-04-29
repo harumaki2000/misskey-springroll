@@ -138,7 +138,6 @@ import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
-import number from '@/filters/number';
 
 const $i = ensureSignin();
 
@@ -201,6 +200,7 @@ const textAreaReadOnly = ref(false);
 const justEndedComposition = ref(false);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const postFormActions = getPluginHandlers('post_form_action');
+const expiresAt = ref<Date | null>(null);
 
 const draftKey = computed((): string => {
 	let key = props.channel ? `channel:${props.channel.id}` : '';
@@ -849,7 +849,7 @@ async function post(ev?: MouseEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
-		expiresAt: expiresAt.value,
+		expiresAt: expiresAt.value ? expiresAt.value.toISOString() : null,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -910,6 +910,7 @@ async function post(ev?: MouseEvent) {
 			}
 
 			const text = postData.text ?? '';
+			const expiresAt = postData.expiresAt ?? null;
 			const lowerCase = text.toLowerCase();
 			if ((lowerCase.includes('love') || lowerCase.includes('❤')) && lowerCase.includes('misskey')) {
 				claimAchievement('iLoveMisskey');
@@ -964,8 +965,6 @@ function insertMention() {
 		insertTextAtCursor(textareaEl.value, '@' + Misskey.acct.toString(user) + ' ');
 	});
 }
-
-const expiresAt = ref<Date | null>(null);
 
 async function setExpirationTime() {
 	const { canceled, result } = await os.actions({

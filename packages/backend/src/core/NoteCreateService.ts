@@ -24,7 +24,7 @@ import { MiPoll } from '@/models/Poll.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import type { MiChannel } from '@/models/Channel.js';
 import { normalizeForSearch } from '@/misc/normalize-for-search.js';
-import { RelayService } from '@/core/RelayService.js';
+//import { RelayService } from '@/core/RelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -37,7 +37,7 @@ import { NotificationService } from '@/core/NotificationService.js';
 import { UserWebhookService } from '@/core/UserWebhookService.js';
 import { HashtagService } from '@/core/HashtagService.js';
 import { AntennaService } from '@/core/AntennaService.js';
-import { QueueService } from '@/core/QueueService.js';
+//import { QueueService } from '@/core/QueueService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
@@ -56,6 +56,8 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
+import { QueueService } from './QueueService.js';
+import { RelayService } from './RelayService.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -197,9 +199,13 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private noteEntityService: NoteEntityService,
 		private idService: IdService,
 		private globalEventService: GlobalEventService,
-		private queueService: QueueService,
+
+		@Inject(DI.queueService)
+		private readonly queueService: QueueService,
+
 		private fanoutTimelineService: FanoutTimelineService,
 		private notificationService: NotificationService,
+		@Inject(DI.relayService)
 		private relayService: RelayService,
 		private federatedInstanceService: FederatedInstanceService,
 		private hashtagService: HashtagService,
@@ -590,6 +596,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		if (data.expiresAt) {
+			console.log('Adding auto delete job', note.id, data.expiresAt);
 			this.queueService.addAutoDeleteNoteJob(note.id, data.expiresAt);
 		}
 

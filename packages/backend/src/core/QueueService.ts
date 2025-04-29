@@ -23,6 +23,7 @@ import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
 import { MiNote } from '@/models/Note.js';
 import { type NotesRepository } from '@/models/_.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
+import { NoteDeleteService } from './NoteDeleteService.js';
 import type {
 	DbJobData,
 	DeliverJobData,
@@ -60,17 +61,19 @@ export const QUEUE_TYPES = [
 export class QueueService {
 	public autoDeleteNoteQueue: Bull.Queue;
 	private autoDeleteNoteWorker: Bull.Worker;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private noteDeleteService: any;
+
+	private noteDeleteService: NoteDeleteService;
+	app: any;
 
 	async getNoteDeleteService() {
 		if (!this.noteDeleteService) {
-			this.noteDeleteService = (await import('@/core/NoteDeleteService.js')).NoteDeleteService;
+			const { NoteDeleteService } = await import('@/core/NoteDeleteService.js');
+			this.noteDeleteService = this.app.getNote(NoteDeleteService);
 		}
 		return this.noteDeleteService;
 	}
 	constructor(
-		@Inject(DI.config) private readonly logger: Logger,
+		private readonly logger: Logger,
 		@Inject(DI.config) private config: Config,
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
@@ -141,12 +144,6 @@ export class QueueService {
 			removeOnFail: 30,
 		});
 
-		this.systemQueue.add('checkExpiredNotes', {}, {
-			repeat: { pattern: '*/15 * * * *' },
-			removeOnComplete: 10,
-			removeOnFail: 30,
-		});
-
 		this.logger = new Logger('autoDeleteNote');
 		this.autoDeleteNoteQueue = new Bull.Queue('autoDeleteNote', {
 			connection: this.config.redis,
@@ -170,15 +167,6 @@ export class QueueService {
 	@bindThis
 	private async initialize() {
 		this.noteDeleteService = await this.getNoteDeleteService();
-
-		setInterval(() => {
-			this.checkExpiredNotes().catch(e => {
-				this.logger.error('Error checking expired notes:', e);
-			});
-		}, 1000 * 60 * 60);
-		this.initialize().catch(err => {
-			this.logger.error('Failed to initialize QueueService', err);
-		});
 	}
 
 	@bindThis
@@ -191,20 +179,21 @@ export class QueueService {
 				relations: ['user'],
 			}) as MiNote;
 			await this.noteDeleteService.delete({
-				id: note.user?.id,
-				uri: note.user?.uri,
-				host: note.user?.host,
-				isBot: note.user?.isBot,
+				id: note.user!.id,
+				uri: note.user!.uri,
+				host: note.user!.host,
+				isBot: note.user!.isBot,
 			}, note);
 			this.logger.info(`Auto deleted note: ${noteId}`);
 		} catch (err) {
-			this.logger.error(`Error auto deleteing note ${noteId}:`);
+			this.logger.error(`Error auto deleteing note ${noteId}:`, err);
 			throw err;
 		}
 	}
 
 	@bindThis
 	public async checkExpiredNotes(): Promise<void> {
+		this.logger.info('Starting to check expired notes');
 		const now = new Date();
 
 		const expiredNotes = await this.notesRepository.find({
@@ -221,6 +210,7 @@ export class QueueService {
 				noteId: note.id,
 			});
 		}
+		this.logger.info('Finished checking expired notes');
 	}
 
 	@bindThis
@@ -1025,3 +1015,8 @@ export class QueueService {
 	providers: [QueueService],
 })
 export class CoreModule {}
+
+function setInterval(arg0: () => void, arg1: number) {
+	throw new Error('Function not implemented.');
+}
+

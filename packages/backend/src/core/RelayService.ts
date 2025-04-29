@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { forwardRef, Inject, Injectable, Module } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import type { MiUser } from '@/models/User.js';
 import type { RelaysRepository } from '@/models/_.js';
 import { IdService } from '@/core/IdService.js';
@@ -24,10 +24,11 @@ export class RelayService {
 		@Inject(DI.relaysRepository) private relaysRepository: RelaysRepository,
 
 		private idService: IdService,
-		private readonly queueService: QueueService,
+
+		//@Inject(DI.queueService) private queueService: QueueService,
 		private systemAccountService: SystemAccountService,
 		private apRendererService: ApRendererService,
-		//@Inject(forwardRef(() => QueueService)) private queueService: QueueService,
+		@Inject(forwardRef(() => QueueService)) private queueService: QueueService,
 	) {
 		this.relaysCache = new MemorySingleCache<MiRelay[]>(1000 * 60 * 10); // 10m
 	}

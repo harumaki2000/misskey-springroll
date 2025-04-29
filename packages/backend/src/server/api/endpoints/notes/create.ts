@@ -27,13 +27,6 @@ export const meta = {
 
 	prohibitMoved: true,
 
-	expiresAt: {
-		type: 'string',
-		format: 'date-time',
-		nullable: true,
-		default: null,
-	},
-
 	limit: {
 		duration: ms('1hour'),
 		max: 300,
@@ -49,6 +42,12 @@ export const meta = {
 				type: 'object',
 				optional: false, nullable: false,
 				ref: 'Note',
+			},
+			expiresAt: {
+				type: 'string',
+				format: 'misskey:id',
+				nullable: true,
+				default: null,
 			},
 		},
 	},
@@ -386,6 +385,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					visibility: ps.visibility,
 					visibleUsers,
 					channel,
+					expiresAt: ps.expiresAt ? new Date(ps.expiresAt) : null,
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,

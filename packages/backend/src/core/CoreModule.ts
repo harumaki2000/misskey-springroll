@@ -297,6 +297,7 @@ const $ApMentionService: Provider = { provide: 'ApMentionService', useExisting: 
 const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNoteService };
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
+const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueService };
 //#endregion
 
 @Module({
@@ -593,6 +594,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApNoteService,
 		$ApPersonService,
 		$ApQuestionService,
+		$QueueService,
 		//#endregion
 	],
 	exports: [
@@ -883,6 +885,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApNoteService,
 		$ApPersonService,
 		$ApQuestionService,
+		$QueueService,
 		//#endregion
 	],
 })
