@@ -4,7 +4,6 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { error } from 'node:console';
 import { Inject, Injectable, Module } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
 import { parse as parseRedisInfo } from 'redis-info';
@@ -61,6 +60,7 @@ export const QUEUE_TYPES = [
 export class QueueService {
 	public autoDeleteNoteQueue: Bull.Queue;
 	private autoDeleteNoteWorker: Bull.Worker;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	private noteDeleteService: any;
 
 	async getNoteDeleteService() {
@@ -140,6 +140,13 @@ export class QueueService {
 			removeOnComplete: 10,
 			removeOnFail: 30,
 		});
+
+		this.systemQueue.add('checkExpiredNotes', {}, {
+			repeat: { pattern: '*/15 * * * *' },
+			removeOnComplete: 10,
+			removeOnFail: 30,
+		});
+
 		this.logger = new Logger('autoDeleteNote');
 		this.autoDeleteNoteQueue = new Bull.Queue('autoDeleteNote', {
 			connection: this.config.redis,
@@ -149,10 +156,29 @@ export class QueueService {
 			connection: this.config.redis,
 			prefix: 'queue',
 		});
+		this.initialize().catch(err => {
+			this.logger.error('Failed to initialize QueueService', err);
+		});
+
+		this.systemQueue.add('checkExpiredNotes', {}, {
+			repeat: { pattern: '*/15 * * * *' },
+			removeOnComplete: 10,
+			removeOnFail: 30,
+		});
 	}
 
+	@bindThis
 	private async initialize() {
-		this.noteDeleteService = await this.noteDeleteService();
+		this.noteDeleteService = await this.getNoteDeleteService();
+
+		setInterval(() => {
+			this.checkExpiredNotes().catch(e => {
+				this.logger.error('Error checking expired notes:', e);
+			});
+		}, 1000 * 60 * 60);
+		this.initialize().catch(err => {
+			this.logger.error('Failed to initialize QueueService', err);
+		});
 	}
 
 	@bindThis
@@ -165,14 +191,14 @@ export class QueueService {
 				relations: ['user'],
 			}) as MiNote;
 			await this.noteDeleteService.delete({
-				id: note.user!.id,
-				uri: note.user!.uri,
-				host: note.user!.host,
-				isBot: note.user!.isBot,
+				id: note.user?.id,
+				uri: note.user?.uri,
+				host: note.user?.host,
+				isBot: note.user?.isBot,
 			}, note);
 			this.logger.info(`Auto deleted note: ${noteId}`);
 		} catch (err) {
-			this.logger.error(`Error auto deleteing note ${noteId}:`, error);
+			this.logger.error(`Error auto deleteing note ${noteId}:`);
 			throw err;
 		}
 	}

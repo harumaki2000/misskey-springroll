@@ -74,6 +74,7 @@ function getJobInfo(job: Bull.Job | undefined, increment = false): string {
 
 @Injectable()
 export class QueueProcessorService implements OnApplicationShutdown {
+	[x: string]: any;
 	private logger: Logger;
 	private systemQueueWorker: Bull.Worker;
 	private dbQueueWorker: Bull.Worker;
@@ -164,6 +165,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'bakeBufferedReactions': return this.bakeBufferedReactionsProcessorService.process();
 					case 'checkModeratorsActivity': return this.checkModeratorsActivityProcessorService.process();
 					case 'clean': return this.cleanProcessorService.process();
+					case 'checkExpiredNotes': return this.queueService.checkExpiredNotes();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

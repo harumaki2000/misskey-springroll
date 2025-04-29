@@ -138,6 +138,7 @@ import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
+import number from '@/filters/number';
 
 const $i = ensureSignin();
 
@@ -996,6 +997,7 @@ async function setExpirationTime() {
 			},
 		],
 		default: expiresAt.value ? 'custom' : null,
+		type: 'question',
 	});
 
 	if (canceled) return;
@@ -1016,7 +1018,7 @@ async function setExpirationTime() {
 				expiresAt.value = new Date(Date.now() + (minutesNum * 60 * 1000));
 			}
 		}
-	} else if (result === null) {
+	} else if (result === 'null') {
 		expiresAt.value = null;
 	} else {
 		expiresAt.value = new Date(Date.now() + result);
@@ -1050,17 +1052,6 @@ async function insertEmoji(ev: MouseEvent) {
 			nextTick(() => focus());
 		},
 	);
-}
-
-const showTimer = ref(false);
-const expireInMinutes = ref(null);
-
-function toggleTimer() {
-	showTimer.value = !showTimer.value;
-}
-
-function updateExpireTime(event) {
-	expireInMinutes.value = event.target.value;
 }
 
 async function insertMfmFunction(ev: MouseEvent) {

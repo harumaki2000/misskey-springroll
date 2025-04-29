@@ -269,6 +269,7 @@ export function actions<T extends {
 	title?: string;
 	text?: string;
 	actions: T;
+	default?: string | null;
 }): Promise<{
 	canceled: true; result: undefined;
 } | {
