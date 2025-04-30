@@ -5407,7 +5407,7 @@ export interface Locale extends ILocale {
      */
     "autoDeleteNote": string;
     /**
-     * 何分後に削除しますか
+     * 何分後に削除しますか？
      */
     "customExpirationMinutes": string;
     /**

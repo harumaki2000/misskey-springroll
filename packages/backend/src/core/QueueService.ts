@@ -72,7 +72,7 @@ export class QueueService {
 	async getNoteDeleteService() {
 		if (!this.noteDeleteService) {
 			const { NoteDeleteService } = await import('@/core/NoteDeleteService.js');
-			this.noteDeleteService = this.moduleRef.get(NoteDeleteService);
+			this.noteDeleteService = this.moduleRef.get(NoteDeleteService, { strict: false });
 		}
 		return this.noteDeleteService;
 	}
@@ -94,6 +94,9 @@ export class QueueService {
 	) {
 		this.logger = this.loggerService.getLogger('autoDeleteNote');
 		this.initialize().catch(err => this.logger.error('Failed to initialize autoDeleteNote service', err));
+		this.getNoteDeleteService().then(service => {
+			this.noteDeleteService = service;
+		});
 		this.systemQueue.add('tickCharts', {
 		}, {
 			repeat: { pattern: '55 * * * *' },
@@ -185,6 +188,10 @@ export class QueueService {
 				where: { id: noteId },
 				relations: ['user'],
 			}) as MiNote;
+
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const noteDeleteService = await this.getNoteDeleteService();
+
 			await this.noteDeleteService.delete({
 				id: note.user!.id,
 				uri: note.user!.uri,
