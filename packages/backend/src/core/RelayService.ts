@@ -25,10 +25,10 @@ export class RelayService {
 
 		private idService: IdService,
 
-		@Inject(DI.queueService) private queueService: QueueService,
+		//private queueService: QueueService,
 		private systemAccountService: SystemAccountService,
 		private apRendererService: ApRendererService,
-		//@Inject(forwardRef(() => QueueService)) private queueService: QueueService,
+		@Inject(forwardRef(() => QueueService)) private queueService: QueueService,
 	) {
 		this.relaysCache = new MemorySingleCache<MiRelay[]>(1000 * 60 * 10); // 10m
 	}

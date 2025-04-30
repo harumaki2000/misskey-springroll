@@ -4,7 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable, Module } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Module } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
 import { parse as parseRedisInfo } from 'redis-info';
 import { LessThan } from 'typeorm';
@@ -26,6 +26,7 @@ import { type NotesRepository } from '@/models/_.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { LoggerService } from './LoggerService.js';
+import { CoreModule } from './CoreModule.js';
 import type {
 	DbJobData,
 	DeliverJobData,
@@ -1017,12 +1018,10 @@ export class QueueService {
 	}
 }
 //@Module({
-//imports: [],
-//providers: [QueueService],
+//	imports: [
+//		LoggerService,
+//		forwardRef(() => CoreModule),
+//	],
+//	providers: [QueueService],
 //})
 //export class QueueModule {}
-
-//function setInterval(arg0: () => void, arg1: number) {
-//	throw new Error('Function not implemented.');
-//}
-

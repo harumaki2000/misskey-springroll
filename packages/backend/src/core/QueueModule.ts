@@ -17,6 +17,9 @@ import {
 	UserWebhookDeliverJobData,
 	SystemWebhookDeliverJobData,
 } from '../queue/types.js';
+import { QueueService } from './QueueService.js';
+import { LoggerService } from './LoggerService.js';
+import { LoggerModule } from './LoggerModule.js';
 import type { Provider } from '@nestjs/common';
 
 export type SystemQueue = Bull.Queue<Record<string, unknown>>;
@@ -85,6 +88,7 @@ const $systemWebhookDeliver: Provider = {
 
 @Module({
 	imports: [
+		LoggerModule,
 	],
 	providers: [
 		$system,
@@ -96,6 +100,8 @@ const $systemWebhookDeliver: Provider = {
 		$objectStorage,
 		$userWebhookDeliver,
 		$systemWebhookDeliver,
+		QueueService,
+		LoggerService,
 	],
 	exports: [
 		$system,
@@ -107,6 +113,8 @@ const $systemWebhookDeliver: Provider = {
 		$objectStorage,
 		$userWebhookDeliver,
 		$systemWebhookDeliver,
+		QueueService,
+		LoggerService,
 	],
 })
 export class QueueModule implements OnApplicationShutdown {

@@ -200,11 +200,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private idService: IdService,
 		private globalEventService: GlobalEventService,
 
-		@Inject(DI.queueService) private queueService: QueueService,
+		private queueService: QueueService,
 
 		private fanoutTimelineService: FanoutTimelineService,
 		private notificationService: NotificationService,
-		@Inject(DI.relayService)
 		private relayService: RelayService,
 		private federatedInstanceService: FederatedInstanceService,
 		private hashtagService: HashtagService,
