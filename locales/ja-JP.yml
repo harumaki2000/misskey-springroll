@@ -1346,6 +1346,13 @@ settingsMigrating: "設定を移行しています。しばらくお待ちくだ
 readonly: "読み取り専用"
 goToDeck: "デッキへ戻る"
 federationJobs: "連合ジョブ"
+autoDeleteNote: "ノートの自動削除"
+customExpirationMinutes: "何分後に削除しますか？"
+minutes: "30分"
+hour: "1時間"
+day: "1日"
+week: "1週間"
+custom: "カスタム"
 
 _chat:
   noMessagesYet: "まだメッセージはありません"
@@ -1934,6 +1941,7 @@ _role:
     canManageCustomEmojis: "カスタム絵文字の管理"
     canManageAvatarDecorations: "アバターデコレーションの管理"
     driveCapacity: "ドライブ容量"
+    maxFileSize: "アップロード可能な最大ファイルサイズ"
     alwaysMarkNsfw: "ファイルにNSFWを常に付与"
     canUpdateBioMedia: "アイコンとバナーの更新を許可"
     pinMax: "ノートのピン留めの最大数"

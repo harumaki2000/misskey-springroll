@@ -22,6 +22,13 @@ export const meta = {
 
 	kind: 'write:account',
 
+	expiresAt: {
+		type: 'string',
+		format: 'misskey:id',
+		nullable: true,
+		default: null,
+	},
+
 	errors: {
 		noSuchUserList: {
 			message: 'No such user list.',

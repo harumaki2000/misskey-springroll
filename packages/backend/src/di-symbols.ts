@@ -89,5 +89,7 @@ export const DI = {
 	chatRoomInvitationsRepository: Symbol('chatRoomInvitationsRepository'),
 	bubbleGameRecordsRepository: Symbol('bubbleGameRecordsRepository'),
 	reversiGamesRepository: Symbol('reversiGamesRepository'),
+	//queueService: Symbol('queueService'),
+	//relayService: Symbol('relayService'),
 	//#endregion
 };
