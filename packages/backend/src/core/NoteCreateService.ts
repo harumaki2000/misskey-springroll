@@ -7,7 +7,7 @@ import { setImmediate } from 'node:timers/promises';
 import * as mfm from 'mfm-js';
 import { In, DataSource, IsNull, LessThan } from 'typeorm';
 import * as Redis from 'ioredis';
-import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { extractMentions } from '@/misc/extract-mentions.js';
 import { extractCustomEmojisFromMfm } from '@/misc/extract-custom-emojis-from-mfm.js';
 import { extractHashtags } from '@/misc/extract-hashtags.js';
@@ -200,8 +200,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private idService: IdService,
 		private globalEventService: GlobalEventService,
 
-		@Inject(DI.queueService)
-		private readonly queueService: QueueService,
+		@Inject(DI.queueService) private queueService: QueueService,
 
 		private fanoutTimelineService: FanoutTimelineService,
 		private notificationService: NotificationService,

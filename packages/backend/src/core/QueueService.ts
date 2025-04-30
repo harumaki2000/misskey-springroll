@@ -9,6 +9,7 @@ import { MetricsTime, type JobType } from 'bullmq';
 import { parse as parseRedisInfo } from 'redis-info';
 import { LessThan } from 'typeorm';
 import * as Bull from 'bullmq';
+import { ModuleRef } from '@nestjs/core';
 import Logger from '@/logger.js';
 import type { IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
@@ -24,6 +25,7 @@ import { MiNote } from '@/models/Note.js';
 import { type NotesRepository } from '@/models/_.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
+import { LoggerService } from './LoggerService.js';
 import type {
 	DbJobData,
 	DeliverJobData,
@@ -64,17 +66,19 @@ export class QueueService {
 
 	private noteDeleteService: NoteDeleteService;
 	app: any;
+	logger: Logger;
 
 	async getNoteDeleteService() {
 		if (!this.noteDeleteService) {
 			const { NoteDeleteService } = await import('@/core/NoteDeleteService.js');
-			this.noteDeleteService = this.app.getNote(NoteDeleteService);
+			this.noteDeleteService = this.moduleRef.get(NoteDeleteService);
 		}
 		return this.noteDeleteService;
 	}
 	constructor(
-		private readonly logger: Logger,
+		private loggerService: LoggerService,
 		@Inject(DI.config) private config: Config,
+		private moduleRef: ModuleRef,
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
 		@Inject('queue:endedPollNotification') public endedPollNotificationQueue: EndedPollNotificationQueue,
@@ -87,6 +91,8 @@ export class QueueService {
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 		@Inject(DI.notesRepository) private notesRepository: NotesRepository,
 	) {
+		this.logger = this.loggerService.getLogger('autoDeleteNote');
+		this.initialize().catch(err => this.logger.error('Failed to initialize autoDeleteNote service', err));
 		this.systemQueue.add('tickCharts', {
 		}, {
 			repeat: { pattern: '55 * * * *' },
@@ -1010,13 +1016,13 @@ export class QueueService {
 		};
 	}
 }
-@Module({
-	imports: [Logger],
-	providers: [QueueService],
-})
-export class CoreModule {}
+//@Module({
+//imports: [],
+//providers: [QueueService],
+//})
+//export class QueueModule {}
 
-function setInterval(arg0: () => void, arg1: number) {
-	throw new Error('Function not implemented.');
-}
+//function setInterval(arg0: () => void, arg1: number) {
+//	throw new Error('Function not implemented.');
+//}
 
