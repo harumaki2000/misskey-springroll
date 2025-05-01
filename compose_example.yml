@@ -1,6 +1,6 @@
 services:
   web:
-    image: harumaki2000/misskey-springroll:latest
+    build: .
     restart: always
     links:
       - db
