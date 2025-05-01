@@ -994,12 +994,40 @@ async function setExpirationTime() {
 				value: 'custom',
 				text: i18n.ts.custom,
 			},
+			{
+				value: 'date',
+				text: i18n.ts.specifyDate,
+			},
 		],
-		default: expiresAt.value ? 'custom' : null,
+		default: expiresAt.value ? (typeof expiresAt.value === 'string' ? 'date' : 'custom') : null,
 		type: 'question',
 	});
 
 	if (canceled) return;
+
+	if (result === 'date') {
+		const { canceled, result: dateString } = await os.inputText({
+			type: 'datetime-local',
+			text: i18n.ts.specifyExpirationDateTime,
+			placeholder: new Date().toISOString().slice(0, 16),
+		});
+
+		if (canceled) return;
+
+		if (dateString) {
+			const selectedDate = new Date(dateString);
+			const now = new Date();
+
+			if (selectedDate > now) {
+				expiresAt.value = selectedDate;
+			} else {
+				os.alert({
+					type: 'error',
+					text: i18n.ts.cannotSpecifyPastDate,
+				});
+			}
+		}
+	}
 
 	if (result === 'custom') {
 		const { canceled, result: minutes } = await os.inputText({

@@ -5437,6 +5437,18 @@ export interface Locale extends ILocale {
      * カスタム
      */
     "custom": string;
+    /**
+     * 日付指定
+     */
+    "specifyDate": string;
+    /**
+     * 削除日時を指定
+     */
+    "specifyExpirationDateTime": string;
+    /**
+     * 過去の日付は指定できません
+     */
+    "cannotSpecifyPastDate": string;
     "_chat": {
         /**
          * まだメッセージはありません

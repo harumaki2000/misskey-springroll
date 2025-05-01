@@ -1354,6 +1354,9 @@ hour: "1時間"
 day: "1日"
 week: "1週間"
 custom: "カスタム"
+specifyDate: "日付指定"
+specifyExpirationDateTime: "削除日時を指定"
+cannotSpecifyPastDate: "過去の日付は指定できません"
 
 _chat:
   noMessagesYet: "まだメッセージはありません"
