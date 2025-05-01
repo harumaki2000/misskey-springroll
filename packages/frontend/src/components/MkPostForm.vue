@@ -975,19 +975,19 @@ async function setExpirationTime() {
 				text: i18n.ts.none,
 			},
 			{
-				value: '1000 * 60 * 30',
+				value: 1000 * 60 * 30,
 				text: (i18n.ts.minutes as string).replace('{n}', '30'),
 			},
 			{
-				value: '1000 * 60 * 60',
+				value: 1000 * 60 * 60,
 				text: i18n.ts.hour,
 			},
 			{
-				value: '1000 * 60 * 60 * 24',
+				value: 1000 * 60 * 60 * 24,
 				text: i18n.ts.day,
 			},
 			{
-				value: '1000 * 60 * 60 * 24 * 7',
+				value: 1000 * 60 * 60 * 24 * 7,
 				text: i18n.ts.week,
 			},
 			{
@@ -1017,8 +1017,8 @@ async function setExpirationTime() {
 				expiresAt.value = new Date(Date.now() + (minutesNum * 60 * 1000));
 			}
 		}
-	} else if (result === 'null') {
-		expiresAt.value = null;
+	} else if (typeof result === 'number') {
+		expiresAt.value = new Date(Date.now() + result);
 	} else {
 		expiresAt.value = new Date(Date.now() + result);
 	}
