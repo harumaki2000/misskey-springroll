@@ -1007,20 +1007,21 @@ async function setExpirationTime() {
 			text: i18n.ts.customExpirationMinutes,
 			placeholder: '30',
 			default: '30',
-		});
+			max: '43200',
+		} as any);
 
 		if (canceled) return;
 
 		if (minutes) {
 			const minutesNum = parseInt(minutes, 10);
-			if (!isNaN(minutesNum) && minutesNum > 0) {
+			if (!isNaN(minutesNum) && minutesNum > 0 && minutesNum <= 43200) {
 				expiresAt.value = new Date(Date.now() + (minutesNum * 60 * 1000));
 			}
 		}
 	} else if (typeof result === 'number') {
 		expiresAt.value = new Date(Date.now() + result);
-	} else {
-		expiresAt.value = new Date(Date.now() + result);
+	} else if (result === 'null') {
+		expiresAt.value = null;
 	}
 }
 

@@ -229,7 +229,9 @@ export class QueueService {
 
 	@bindThis
 	public addAutoDeleteNoteJob(noteId: MiNote['id'], expiresAt: Date): void {
-		const delay = expiresAt.getTime() - Date.now();
+		const maxExpiryDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
+		const safeExpiresAt = expiresAt > maxExpiryDate ? maxExpiryDate : expiresAt;
+		const delay = safeExpiresAt.getTime() - Date.now();
 
 		if (delay <= 0) {
 			this.autoDeleteNoteQueue.add(noteId, {
