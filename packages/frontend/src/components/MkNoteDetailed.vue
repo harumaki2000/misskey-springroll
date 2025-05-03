@@ -152,6 +152,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @mousedown="heartReact()">
 				<i class="ti ti-star"></i>
 			</button>
+			<button v-if="appearNote.expiresAt" :class="$style.noteFooterButton" class="_button"><i class="ti ti-stopwatch"></i></button>
 			<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" class="_button" :class="$style.noteFooterButton" @mousedown.prevent="clip()">
 				<i class="ti ti-paperclip"></i>
 			</button>
