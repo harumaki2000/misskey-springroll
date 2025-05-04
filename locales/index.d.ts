@@ -899,6 +899,10 @@ export interface Locale extends ILocale {
      */
     "software": string;
     /**
+     * ソフトウェア名
+     */
+    "softwareName": string;
+    /**
      * バージョン
      */
     "version": string;
@@ -5402,6 +5406,53 @@ export interface Locale extends ILocale {
      * 連合ジョブ
      */
     "federationJobs": string;
+    /**
+     * ドライブでは、過去にアップロードしたファイルの一覧が表示されます。<br>
+     * ノートに添付する際に再利用したり、あとで投稿するファイルを予めアップロードしておくこともできます。<br>
+     * <b>ファイルを削除すると、今までそのファイルを使用した全ての場所(ノート、ページ、アバター、バナー等)からも見えなくなるので注意してください。</b><br>
+     * フォルダを作って整理することもできます。
+     */
+    "driveAboutTip": string;
+    /**
+     * ノートの自動削除
+     */
+    "autoDeleteNote": string;
+    /**
+     * 何分後に削除しますか？
+     */
+    "customExpirationMinutes": string;
+    /**
+     * 30分
+     */
+    "minutes": string;
+    /**
+     * 1時間
+     */
+    "hour": string;
+    /**
+     * 1日
+     */
+    "day": string;
+    /**
+     * 1週間
+     */
+    "week": string;
+    /**
+     * カスタム
+     */
+    "custom": string;
+    /**
+     * 日付指定
+     */
+    "specifyDate": string;
+    /**
+     * 削除日時を指定
+     */
+    "specifyExpirationDateTime": string;
+    /**
+     * 過去の日付は指定できません
+     */
+    "cannotSpecifyPastDate": string;
     "_chat": {
         /**
          * まだメッセージはありません
@@ -5698,6 +5749,10 @@ export interface Locale extends ILocale {
          * デバイス間でインストールしたテーマを同期
          */
         "enableSyncThemesBetweenDevices": string;
+        /**
+         * ひっぱって更新
+         */
+        "enablePullToRefresh": string;
         "_chat": {
             /**
              * 送信者の名前を表示
@@ -5864,6 +5919,10 @@ export interface Locale extends ILocale {
              * サーバー応答なしのため停止中
              */
             "autoSuspendedForNotResponding": string;
+            /**
+             * 配信停止中のソフトウェアであるため停止中
+             */
+            "softwareSuspended": string;
         };
     };
     "_bubbleGame": {
@@ -6349,6 +6408,14 @@ export interface Locale extends ILocale {
          * 一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。
          */
         "thisSettingWillAutomaticallyOffWhenModeratorsInactive": string;
+        /**
+         * 配信停止中のソフトウェア
+         */
+        "deliverSuspendedSoftware": string;
+        /**
+         * 脆弱性などの理由で、サーバーのソフトウェアの名前及びバージョンの範囲を指定して配信を停止できます。このバージョン情報はサーバーが提供したものであり、信頼性は保証されません。バージョン指定には semver の範囲指定が使用できますが、>= 2024.3.1 と指定すると 2024.3.1-custom.0 のようなカスタムバージョンが含まれないため、>= 2024.3.1-0 のように prerelease の指定を行うことを推奨します。
+         */
+        "deliverSuspendedSoftwareDescription": string;
     };
     "_accountMigration": {
         /**
@@ -7464,6 +7531,10 @@ export interface Locale extends ILocale {
              * ドライブ容量
              */
             "driveCapacity": string;
+            /**
+             * アップロード可能な最大ファイルサイズ
+             */
+            "maxFileSize": string;
             /**
              * ファイルにNSFWを常に付与
              */

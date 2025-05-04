@@ -45,6 +45,7 @@ import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { AggregateRetentionProcessorService } from './processors/AggregateRetentionProcessorService.js';
 import { QueueLoggerService } from './QueueLoggerService.js';
 import { QUEUE, baseWorkerOptions } from './const.js';
+import { CheckExpiredNotesProcessorService } from './processors/CheckExpiredNotesProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
 function httpRelatedBackoff(attemptsMade: number) {
@@ -74,6 +75,7 @@ function getJobInfo(job: Bull.Job | undefined, increment = false): string {
 
 @Injectable()
 export class QueueProcessorService implements OnApplicationShutdown {
+	[x: string]: any;
 	private logger: Logger;
 	private systemQueueWorker: Bull.Worker;
 	private dbQueueWorker: Bull.Worker;
@@ -123,6 +125,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private bakeBufferedReactionsProcessorService: BakeBufferedReactionsProcessorService,
 		private checkModeratorsActivityProcessorService: CheckModeratorsActivityProcessorService,
 		private cleanProcessorService: CleanProcessorService,
+		private checkExpiredNotesProcessorService: CheckExpiredNotesProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -164,6 +167,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'bakeBufferedReactions': return this.bakeBufferedReactionsProcessorService.process();
 					case 'checkModeratorsActivity': return this.checkModeratorsActivityProcessorService.process();
 					case 'clean': return this.cleanProcessorService.process();
+					case 'checkExpiredNotes': return this.checkExpiredNotesProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

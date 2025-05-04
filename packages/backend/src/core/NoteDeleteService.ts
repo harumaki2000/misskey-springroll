@@ -4,7 +4,7 @@
  */
 
 import { Brackets, In, IsNull, Not } from 'typeorm';
-import { Injectable, Inject } from '@nestjs/common';
+import { forwardRef, Injectable, Inject } from '@nestjs/common';
 import type { MiUser, MiLocalUser, MiRemoteUser } from '@/models/User.js';
 import type { MiNote, IMentionedRemoteUsers } from '@/models/Note.js';
 import type { InstancesRepository, MiMeta, NotesRepository, UsersRepository } from '@/models/_.js';
@@ -42,9 +42,11 @@ export class NoteDeleteService {
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
 
+		@Inject(forwardRef(() => RelayService))
+		private relayService: RelayService,
+
 		private userEntityService: UserEntityService,
 		private globalEventService: GlobalEventService,
-		private relayService: RelayService,
 		private federatedInstanceService: FederatedInstanceService,
 		private apRendererService: ApRendererService,
 		private apDeliverManagerService: ApDeliverManagerService,

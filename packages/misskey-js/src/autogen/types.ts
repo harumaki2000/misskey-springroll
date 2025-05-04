@@ -4989,7 +4989,7 @@ export type components = {
       isNotResponding: boolean;
       isSuspended: boolean;
       /** @enum {string} */
-      suspensionState: 'none' | 'manuallySuspended' | 'goneSuspended' | 'autoSuspendedForNotResponding';
+      suspensionState: 'none' | 'manuallySuspended' | 'goneSuspended' | 'autoSuspendedForNotResponding' | 'softwareSuspended';
       isBlocked: boolean;
       /** @example misskey */
       softwareName: string | null;
@@ -5216,6 +5216,7 @@ export type components = {
       canUseTranslator: boolean;
       canHideAds: boolean;
       driveCapacityMb: number;
+      maxFileSizeMb: number;
       alwaysMarkNsfw: boolean;
       canUpdateBioMedia: boolean;
       pinLimit: number;
@@ -8764,6 +8765,10 @@ export type operations = {
             /** @enum {string} */
             federation: 'all' | 'specified' | 'none';
             federationHosts: string[];
+            deliverSuspendedSoftware: {
+                software: string;
+                versionRange: string;
+              }[];
           };
         };
       };
@@ -11430,6 +11435,10 @@ export type operations = {
           /** @enum {string} */
           federation?: 'all' | 'none' | 'specified';
           federationHosts?: string[];
+          deliverSuspendedSoftware?: {
+              software: string;
+              versionRange: string;
+            }[];
         };
       };
     };
@@ -14593,11 +14602,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -14648,11 +14655,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -14876,11 +14881,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15050,11 +15053,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15166,11 +15167,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15338,11 +15337,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15450,11 +15447,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {
@@ -15565,11 +15560,9 @@ export type operations = {
       };
     };
     responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': unknown;
-        };
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {

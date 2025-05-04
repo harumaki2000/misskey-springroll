@@ -4,9 +4,13 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Module } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
 import { parse as parseRedisInfo } from 'redis-info';
+import { LessThan } from 'typeorm';
+import * as Bull from 'bullmq';
+import { ModuleRef } from '@nestjs/core';
+import Logger from '@/logger.js';
 import type { IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiWebhook, WebhookEventTypes } from '@/models/Webhook.js';
@@ -17,7 +21,12 @@ import { bindThis } from '@/decorators.js';
 import type { Antenna } from '@/server/api/endpoints/i/import-antennas.js';
 import { ApRequestCreator } from '@/core/activitypub/ApRequestService.js';
 import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import { MiNote } from '@/models/Note.js';
+import { type NotesRepository } from '@/models/_.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
+import { NoteDeleteService } from './NoteDeleteService.js';
+import { LoggerService } from './LoggerService.js';
+import { CoreModule } from './CoreModule.js';
 import type {
 	DbJobData,
 	DeliverJobData,
@@ -38,7 +47,6 @@ import type {
 	UserWebhookDeliverQueue,
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
-import type * as Bull from 'bullmq';
 
 export const QUEUE_TYPES = [
 	'system',
@@ -54,9 +62,24 @@ export const QUEUE_TYPES = [
 
 @Injectable()
 export class QueueService {
+	public autoDeleteNoteQueue: Bull.Queue;
+	private autoDeleteNoteWorker: Bull.Worker;
+
+	private noteDeleteService: NoteDeleteService;
+	app: any;
+	logger: Logger;
+
+	async getNoteDeleteService() {
+		if (!this.noteDeleteService) {
+			const { NoteDeleteService } = await import('@/core/NoteDeleteService.js');
+			this.noteDeleteService = this.moduleRef.get(NoteDeleteService, { strict: false });
+		}
+		return this.noteDeleteService;
+	}
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
+		private loggerService: LoggerService,
+		@Inject(DI.config) private config: Config,
+		private moduleRef: ModuleRef,
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
 		@Inject('queue:endedPollNotification') public endedPollNotificationQueue: EndedPollNotificationQueue,
@@ -67,7 +90,13 @@ export class QueueService {
 		@Inject('queue:objectStorage') public objectStorageQueue: ObjectStorageQueue,
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
+		@Inject(DI.notesRepository) private notesRepository: NotesRepository,
 	) {
+		this.logger = this.loggerService.getLogger('autoDeleteNote');
+		this.initialize().catch(err => this.logger.error('Failed to initialize autoDeleteNote service', err));
+		this.getNoteDeleteService().then(service => {
+			this.noteDeleteService = service;
+		});
 		this.systemQueue.add('tickCharts', {
 		}, {
 			repeat: { pattern: '55 * * * *' },
@@ -123,6 +152,106 @@ export class QueueService {
 			repeat: { pattern: '30 * * * *' },
 			removeOnComplete: 10,
 			removeOnFail: 30,
+		});
+
+		this.logger = new Logger('autoDeleteNote');
+		this.autoDeleteNoteQueue = new Bull.Queue('autoDeleteNote', {
+			connection: this.config.redis,
+			prefix: 'queue',
+		});
+		this.autoDeleteNoteWorker = new Bull.Worker('autoDeleteNote', this.processAutoDeleteNote, {
+			connection: this.config.redis,
+			prefix: 'queue',
+		});
+		this.initialize().catch(err => {
+			this.logger.error('Failed to initialize QueueService', err);
+		});
+
+		this.systemQueue.add('checkExpiredNotes', {}, {
+			repeat: { pattern: '*/15 * * * *' },
+			removeOnComplete: 10,
+			removeOnFail: 30,
+		});
+	}
+
+	@bindThis
+	private async initialize() {
+		this.noteDeleteService = await this.getNoteDeleteService();
+	}
+
+	@bindThis
+	private async processAutoDeleteNote(job: Bull.Job<{ noteId: MiNote['id'] }>): Promise<void> {
+		const noteId = job.data.noteId;
+
+		try {
+			const note = await this.notesRepository.findOneOrFail({
+				where: { id: noteId },
+				relations: ['user'],
+			}) as MiNote;
+
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const noteDeleteService = await this.getNoteDeleteService();
+
+			await this.noteDeleteService.delete({
+				id: note.user!.id,
+				uri: note.user!.uri,
+				host: note.user!.host,
+				isBot: note.user!.isBot,
+			}, note);
+			this.logger.info(`Auto deleted note: ${noteId}`);
+		} catch (err) {
+			this.logger.error(`Error auto deleteing note ${noteId}:`, err);
+			throw err;
+		}
+	}
+
+	@bindThis
+	public async checkExpiredNotes(): Promise<void> {
+		this.logger.info('Starting to check expired notes');
+		const now = new Date();
+
+		const expiredNotes = await this.notesRepository.find({
+			where: {
+				expiresAt: LessThan(now),
+			},
+			select: ['id'],
+		});
+
+		this.logger.info(`Found ${expiredNotes.length} expired notes to delete`);
+
+		for (const note of expiredNotes) {
+			await this.autoDeleteNoteQueue.add(note.id, {
+				noteId: note.id,
+			});
+		}
+		this.logger.info('Finished checking expired notes');
+	}
+
+	@bindThis
+	public addAutoDeleteNoteJob(noteId: MiNote['id'], expiresAt: Date): void {
+		const maxExpiryDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
+		const safeExpiresAt = expiresAt > maxExpiryDate ? maxExpiryDate : expiresAt;
+		const delay = safeExpiresAt.getTime() - Date.now();
+
+		if (delay <= 0) {
+			this.autoDeleteNoteQueue.add(noteId, {
+				noteId: noteId,
+			});
+			return;
+		}
+
+		this.autoDeleteNoteQueue.add(noteId, {
+			noteId: noteId,
+		}, {
+			delay,
+			removeOnComplete: {
+				age: 3600 * 24 * 7,
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7,
+				count: 100,
+			},
 		});
 	}
 
@@ -897,3 +1026,11 @@ export class QueueService {
 		};
 	}
 }
+//@Module({
+//	imports: [
+//		LoggerService,
+//		forwardRef(() => CoreModule),
+//	],
+//	providers: [QueueService],
+//})
+//export class QueueModule {}

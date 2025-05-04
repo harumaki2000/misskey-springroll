@@ -300,6 +300,9 @@ export const PREF_DEF = {
 	enableHorizontalSwipe: {
 		default: true,
 	},
+	enablePullToRefresh: {
+		default: true,
+	},
 	useNativeUiForVideoAudioPlayer: {
 		default: false,
 	},
@@ -332,6 +335,9 @@ export const PREF_DEF = {
 	},
 	showNavbarSubButtons: {
 		default: true,
+	},
+	showTitlebar: {
+		default: false,
 	},
 	plugins: {
 		default: [] as Plugin[],

@@ -85,6 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
 			<button v-tooltip="i18n.ts.emoji" :class="['_button', $style.footerButton]" @click="insertEmoji"><i class="ti ti-mood-happy"></i></button>
+			<button v-tooltip="i18n.ts.autoDeleteNote" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: expiresAt !== null }]" @click="setExpirationTime"><i class="ti ti-stopwatch"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 		</div>
 		<div :class="$style.footerRight">
@@ -199,6 +200,7 @@ const textAreaReadOnly = ref(false);
 const justEndedComposition = ref(false);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const postFormActions = getPluginHandlers('post_form_action');
+const expiresAt = ref<Date | null>(null);
 
 const draftKey = computed((): string => {
 	let key = props.channel ? `channel:${props.channel.id}` : '';
@@ -766,6 +768,7 @@ function saveDraft() {
 			localOnly: localOnly.value,
 			files: files.value,
 			poll: poll.value,
+			expiresAt: expiresAt.value,
 			visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
@@ -846,6 +849,7 @@ async function post(ev?: MouseEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
+		expiresAt: expiresAt.value ? expiresAt.value.toISOString() : null,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -906,6 +910,7 @@ async function post(ev?: MouseEvent) {
 			}
 
 			const text = postData.text ?? '';
+			const expiresAt = postData.expiresAt ?? null;
 			const lowerCase = text.toLowerCase();
 			if ((lowerCase.includes('love') || lowerCase.includes('❤')) && lowerCase.includes('misskey')) {
 				claimAchievement('iLoveMisskey');
@@ -959,6 +964,93 @@ function insertMention() {
 	os.selectUser({ localOnly: localOnly.value, includeSelf: true }).then(user => {
 		insertTextAtCursor(textareaEl.value, '@' + Misskey.acct.toString(user) + ' ');
 	});
+}
+
+async function setExpirationTime() {
+	const { canceled, result } = await os.actions({
+		title: i18n.ts.autoDeleteNote,
+		actions: [
+			{
+				value: 'null',
+				text: i18n.ts.none,
+			},
+			{
+				value: 1000 * 60 * 30,
+				text: (i18n.ts.minutes as string).replace('{n}', '30'),
+			},
+			{
+				value: 1000 * 60 * 60,
+				text: i18n.ts.hour,
+			},
+			{
+				value: 1000 * 60 * 60 * 24,
+				text: i18n.ts.day,
+			},
+			{
+				value: 1000 * 60 * 60 * 24 * 7,
+				text: i18n.ts.week,
+			},
+			{
+				value: 'custom',
+				text: i18n.ts.custom,
+			},
+			{
+				value: 'date',
+				text: i18n.ts.specifyDate,
+			},
+		],
+		default: expiresAt.value ? (typeof expiresAt.value === 'string' ? 'date' : 'custom') : null,
+		type: 'question',
+	});
+
+	if (canceled) return;
+
+	if (result === 'date') {
+		const { canceled, result: dateString } = await os.inputText({
+			type: 'datetime-local',
+			text: i18n.ts.specifyExpirationDateTime,
+			placeholder: new Date().toISOString().slice(0, 16),
+		});
+
+		if (canceled) return;
+
+		if (dateString) {
+			const selectedDate = new Date(dateString);
+			const now = new Date();
+
+			if (selectedDate > now) {
+				expiresAt.value = selectedDate;
+			} else {
+				os.alert({
+					type: 'error',
+					text: i18n.ts.cannotSpecifyPastDate,
+				});
+			}
+		}
+	}
+
+	if (result === 'custom') {
+		const { canceled, result: minutes } = await os.inputText({
+			type: 'number',
+			text: i18n.ts.customExpirationMinutes,
+			placeholder: '30',
+			default: '30',
+			max: '43200',
+		} as any);
+
+		if (canceled) return;
+
+		if (minutes) {
+			const minutesNum = parseInt(minutes, 10);
+			if (!isNaN(minutesNum) && minutesNum > 0 && minutesNum <= 43200) {
+				expiresAt.value = new Date(Date.now() + (minutesNum * 60 * 1000));
+			}
+		}
+	} else if (typeof result === 'number') {
+		expiresAt.value = new Date(Date.now() + result);
+	} else if (result === 'null') {
+		expiresAt.value = null;
+	}
 }
 
 async function insertEmoji(ev: MouseEvent) {

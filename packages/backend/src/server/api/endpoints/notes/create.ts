@@ -43,6 +43,12 @@ export const meta = {
 				optional: false, nullable: false,
 				ref: 'Note',
 			},
+			expiresAt: {
+				type: 'string',
+				format: 'misskey:id',
+				nullable: true,
+				default: null,
+			},
 		},
 	},
 
@@ -379,6 +385,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					visibility: ps.visibility,
 					visibleUsers,
 					channel,
+					expiresAt: ps.expiresAt ? new Date(ps.expiresAt) : null,
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,

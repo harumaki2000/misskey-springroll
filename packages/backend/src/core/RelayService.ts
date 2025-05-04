@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import type { MiUser } from '@/models/User.js';
 import type { RelaysRepository } from '@/models/_.js';
 import { IdService } from '@/core/IdService.js';
@@ -21,13 +21,14 @@ export class RelayService {
 	private relaysCache: MemorySingleCache<MiRelay[]>;
 
 	constructor(
-		@Inject(DI.relaysRepository)
-		private relaysRepository: RelaysRepository,
+		@Inject(DI.relaysRepository) private relaysRepository: RelaysRepository,
 
 		private idService: IdService,
-		private queueService: QueueService,
+
+		//private queueService: QueueService,
 		private systemAccountService: SystemAccountService,
 		private apRendererService: ApRendererService,
+		@Inject(forwardRef(() => QueueService)) private queueService: QueueService,
 	) {
 		this.relaysCache = new MemorySingleCache<MiRelay[]>(1000 * 60 * 10); // 10m
 	}
@@ -43,6 +44,7 @@ export class RelayService {
 		const relayActor = await this.systemAccountService.fetch('relay');
 		const follow = this.apRendererService.renderFollowRelay(relay, relayActor);
 		const activity = this.apRendererService.addContext(follow);
+		//	await this.queueService.someMethod();
 		this.queueService.deliver(relayActor, activity, relay.inbox, false);
 
 		return relay;
@@ -62,6 +64,7 @@ export class RelayService {
 		const follow = this.apRendererService.renderFollowRelay(relay, relayActor);
 		const undo = this.apRendererService.renderUndo(follow, relayActor);
 		const activity = this.apRendererService.addContext(undo);
+		//await this.queueService.someMethod();
 		this.queueService.deliver(relayActor, activity, relay.inbox, false);
 
 		await this.relaysRepository.delete(relay.id);
@@ -106,6 +109,7 @@ export class RelayService {
 		const signed = await this.apRendererService.attachLdSignature(copy, user);
 
 		for (const relay of relays) {
+			//		await this.queueService.someMethod();
 			this.queueService.deliver(user, signed, relay.inbox, false);
 		}
 	}

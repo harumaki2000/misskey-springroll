@@ -124,7 +124,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkTime :time="appearNote.createdAt" mode="detail" colored/>
 				</MkA>
 			</div>
-			<MkReactionsViewer v-if="appearNote.reactionAcceptance !== 'likeOnly'" ref="reactionsViewer" :note="appearNote"/>
+			<MkReactionsViewer v-if="appearNote.reactionAcceptance !== 'likeOnly'" ref="reactionsViewer" style="margin-top: 6px;" :note="appearNote"/>
 			<button class="_button" :class="$style.noteFooterButton" @click="reply()">
 				<i class="ti ti-arrow-back-up"></i>
 				<p v-if="appearNote.repliesCount > 0" :class="$style.noteFooterButtonCount">{{ number(appearNote.repliesCount) }}</p>
@@ -158,6 +158,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button ref="menuButton" class="_button" :class="$style.noteFooterButton" @mousedown.prevent="showMenu()">
 				<i class="ti ti-dots"></i>
 			</button>
+			<button v-if="appearNote.expiresAt" :class="$style.noteFooterButton" class="_button"><i class="ti ti-stopwatch"></i></button>
 		</footer>
 	</article>
 	<div :class="$style.tabs">

@@ -105,6 +105,7 @@ function generateDummyNote(override?: Partial<MiNote>): MiNote {
 		replyUserHost: null,
 		renoteUserId: null,
 		renoteUserHost: null,
+		expiresAt: null,
 		...override,
 	};
 }
