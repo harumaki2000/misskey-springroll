@@ -5453,6 +5453,10 @@ export interface Locale extends ILocale {
      * 過去の日付は指定できません
      */
     "cannotSpecifyPastDate": string;
+    /**
+     * 期限は最大30日間までです
+     */
+    "maxExpirationTimeExceeded": string;
     "_chat": {
         /**
          * まだメッセージはありません

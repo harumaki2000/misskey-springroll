@@ -1006,30 +1006,38 @@ async function setExpirationTime() {
 	if (canceled) return;
 
 	if (result === 'date') {
+		const now = new Date();
+		const maxDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
 		const { canceled, result: dateString } = await os.inputText({
 			type: 'datetime-local',
 			text: i18n.ts.specifyExpirationDateTime,
-			placeholder: new Date().toISOString().slice(0, 16),
+			placeholder: now.toISOString().slice(0, 16),
+			max: maxDate.toISOString().slice(0, 16),
 		});
 
 		if (canceled) return;
 
 		if (dateString) {
 			const selectedDate = new Date(dateString);
-			const now = new Date();
 
-			if (selectedDate > now) {
-				expiresAt.value = selectedDate;
-			} else {
+			if (selectedDate <= now) {
 				os.alert({
 					type: 'error',
 					text: i18n.ts.cannotSpecifyPastDate,
 				});
+				return;
 			}
-		}
-	}
 
-	if (result === 'custom') {
+			if (selectedDate > maxDate) {
+				os.alert({
+					type: 'error',
+					text: i18n.ts.maxExpirationTimeExceeded,
+				});
+				return;
+			}
+			expiresAt.value = selectedDate;
+		}
+	} else if (result === 'custom') {
 		const { canceled, result: minutes } = await os.inputText({
 			type: 'number',
 			text: i18n.ts.customExpirationMinutes,
