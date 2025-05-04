@@ -56,7 +56,7 @@ import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
 
 const props = withDefaults(defineProps<{
-	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role';
+	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role' | 'mutual';
 	list?: string;
 	antenna?: string;
 	channel?: string;
@@ -179,6 +179,12 @@ function connectChannel() {
 		connection = stream.useChannel('roleTimeline', {
 			roleId: props.role,
 		});
+	} else if (props.src === 'mutual') {
+		connection = stream.useChannel('mutualTimeline', {
+			withRenotes: props.withRenotes,
+			withReplies: props.withReplies,
+			withFiles: props.onlyFiles ? true : undefined,
+		});
 	}
 	if (props.src !== 'directs' && props.src !== 'mentions') connection?.on('note', prepend);
 }
@@ -248,9 +254,14 @@ function updatePaginationQuery() {
 		query = {
 			roleId: props.role,
 		};
-	} else {
-		endpoint = null;
-		query = null;
+	}
+	if (props.src === 'mutual') {
+		endpoint = 'notes/mutual-timeline';
+		query = {
+			withRenotes: props.withRenotes,
+			withReplies: props.withReplies,
+			withFiles: props.onlyFiles ? true : undefined,
+		};
 	}
 
 	if (endpoint && query) {

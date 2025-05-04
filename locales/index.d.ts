@@ -9722,6 +9722,10 @@ export interface Locale extends ILocale {
          * グローバル
          */
         "global": string;
+        /**
+         * 相互フォロー
+         */
+        "mutual": string;
     };
     "_play": {
         /**

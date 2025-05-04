@@ -330,6 +330,7 @@ export * as 'notes/timeline' from './endpoints/notes/timeline.js';
 export * as 'notes/translate' from './endpoints/notes/translate.js';
 export * as 'notes/unrenote' from './endpoints/notes/unrenote.js';
 export * as 'notes/user-list-timeline' from './endpoints/notes/user-list-timeline.js';
+export * as 'notes/mutual-timeline' from './endpoints/notes/mutual-timeline.js';
 export * as 'notifications/create' from './endpoints/notifications/create.js';
 export * as 'notifications/flush' from './endpoints/notifications/flush.js';
 export * as 'notifications/mark-all-as-read' from './endpoints/notifications/mark-all-as-read.js';
