@@ -140,7 +140,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()">
 					<i class="ti ti-dots"></i>
 				</button>
-				<button v-if="appearNote.expiresAt" :class="$style.footerButton" class="_button"><i class="ti ti-stopwatch"></i></button>
+				<button v-if="appearNote.expiresAt" v-tooltip="formatExpiresAtTolltip(appearNote.expiresAt)" :class="$style.footerButton" class="_button"><i class="ti ti-stopwatch"></i></button>
 			</footer>
 		</div>
 	</article>
@@ -227,6 +227,7 @@ import { getAppearNote } from '@/utility/get-appear-note.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
+import tooltip from '@/directives/tooltip';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -673,6 +674,31 @@ function emitUpdReaction(emoji: string, delta: number) {
 	} else if (delta > 0) {
 		emit('reaction', emoji);
 	}
+}
+
+function formatExpiresAtTolltip(expiresAt: string | null): string {
+	if (!expiresAt) return '';
+
+	const expiresDate = new Date(expiresAt);
+	const now = new Date();
+	const diffMs = expiresDate.getTime() - now.getTime();
+	const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+	const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+	const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
+
+	let tooltipText = i18n.ts.autoDeleteNote + ': ';
+
+	if (days > 0) {
+		tooltipText += `${days}${i18n.ts._time.day} `;
+	}
+
+	if (hours > 0 || days > 0) {
+		tooltipText += `${hours}${i18n.ts._time.hour} `;
+	}
+
+	tooltipText += `${minutes}${i18n.ts._time.minute}`;
+
+	return tooltipText;
 }
 </script>
 
