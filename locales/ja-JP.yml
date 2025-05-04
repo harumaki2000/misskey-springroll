@@ -2563,6 +2563,7 @@ _timelines:
   local: "ローカル"
   social: "ソーシャル"
   global: "グローバル"
+  mutual: "相互フォロー"
 
 _play:
   new: "Playの作成"

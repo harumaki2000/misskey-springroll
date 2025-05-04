@@ -560,6 +560,10 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/my-antennas/index.vue')),
 	loginRequired: true,
 }, {
+	path: '/timeline/mutual',
+	component: () => import('@/pages/mutual-follow-timeline.vue'),
+	loginRequired: true,
+}, {
 	path: '/timeline/list/:listId',
 	component: page(() => import('@/pages/user-list-timeline.vue')),
 	loginRequired: true,
