@@ -19,7 +19,6 @@ import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointServ
 import { bindThis } from '@/decorators.js';
 import { Endpoint } from '../../endpoint-base.js';
 import { ApiError } from '../../error.js';
-import Channel, { MiChannelService } from '../../stream/channel.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -100,10 +99,33 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			}
 
 			const followings = await this.cacheService.userFollowingsCache.fetch(me.id);
-			const followers = await this.userFollowingService.getFollowees(me.id);
-			const mutualFollowUserIds = followers
-				.filter(followee => Object.hasOwn(followings, followee.followeeId))
-				.map(followee => followee.followeeId);
+			const followees = await this.userFollowingService.getFollowees(me.id);
+			const mutualFollowUserIds: string[] = [];
+
+			for (const followee of followees) {
+				if (await this.userFollowingService.isMutual(me.id, followee.followeeId)) {
+					mutualFollowUserIds.push(followee.followeeId);
+				}
+			}
+
+			if (!this.serverSettings.enableFanoutTimeline) {
+				const timeline = await this.getFromDb({
+					untilId,
+					sinceId,
+					limit: ps.limit,
+					includeMyRenotes: ps.includeMyRenotes,
+					includeRenotedMyNotes: ps.includeRenotedMyNotes,
+					includeLocalRenotes: ps.includeLocalRenotes,
+					withFiles: ps.withFiles,
+					withReplies: ps.withReplies,
+				}, me, mutualFollowUserIds);
+
+				process.nextTick(() => {
+					this.activeUsersChart.read(me);
+				});
+
+				return await this.noteEntityService.packMany(timeline, me);
+			}
 
 			const timeline = await this.fanoutTimelineEndpointService.timeline({
 				untilId,
