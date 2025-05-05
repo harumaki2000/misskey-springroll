@@ -6344,6 +6344,10 @@ export interface Locale extends ILocale {
          * グローバルタイムラインでは、接続している他のすべてのサーバーからの投稿を見られます。
          */
         "global": string;
+        /**
+         * 相互フォロータイムラインでは、相互フォローしているアカウントの投稿を見られます。
+         */
+        "mutual": string;
     };
     "_serverRules": {
         /**
