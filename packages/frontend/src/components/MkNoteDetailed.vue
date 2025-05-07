@@ -158,7 +158,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button ref="menuButton" class="_button" :class="$style.noteFooterButton" @mousedown.prevent="showMenu()">
 				<i class="ti ti-dots"></i>
 			</button>
-			<button v-if="appearNote.expiresAt" v-tooltip="formatExpiresAtTolltip(appearNote.expiresAt)" :class="$style.noteFooterButton" class="_button"><i class="ti ti-stopwatch"></i></button>
+			<span v-if="appearNote.expiresAt" :class="$style.noteFooterButton"><i class="ti ti-stopwatch"></i>{{ i18n.ts.autoDeleteNote }}: <MkTime :time="appearNote.expiresAt" mode="detail" colored/></span>
 		</footer>
 	</article>
 	<div :class="$style.tabs">
@@ -584,30 +584,6 @@ function loadConversation() {
 	});
 }
 
-function formatExpiresAtTolltip(expiresAt: string | null): string {
-	if (!expiresAt) return '';
-
-	const expiresDate = new Date(expiresAt);
-	const now = new Date();
-	const diffMs = expiresDate.getTime() - now.getTime();
-	const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-	const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-	const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
-
-	let tooltipText = i18n.ts.autoDeleteNote + ': ';
-
-	if (days > 0) {
-		tooltipText += `${days}${i18n.ts._time.day} `;
-	}
-
-	if (hours > 0 || days > 0) {
-		tooltipText += `${hours}${i18n.ts._time.hour} `;
-	}
-
-	tooltipText += `${minutes}${i18n.ts._time.minute}`;
-
-	return tooltipText;
-}
 </script>
 
 <style lang="scss" module>
