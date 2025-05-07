@@ -28,6 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="note.visibility === 'followers'" class="ti ti-lock"></i>
 			<i v-else-if="note.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 		</span>
+		<span v-if="note.expiresAt" v-tooltip="formatExpiresAtTolltip(note.expiresAt)" style="margin-left: 0.5em;"><i class="ti ti-stopwatch"></i></span>
 		<span v-if="note.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 		<span v-if="note.channel" style="margin-left: 0.5em;" :title="note.channel.name"><i class="ti ti-device-tv"></i></span>
 	</div>
@@ -47,6 +48,31 @@ defineProps<{
 }>();
 
 const mock = inject(DI.mock, false);
+
+function formatExpiresAtTolltip(expiresAt: string | null): string {
+	if (!expiresAt) return '';
+
+	const expiresDate = new Date(expiresAt);
+	const now = new Date();
+	const diffMs = expiresDate.getTime() - now.getTime();
+	const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+	const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+	const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
+
+	let tooltipText = i18n.ts.autoDeleteNote + ': ';
+
+	if (days > 0) {
+		tooltipText += `${days}${i18n.ts._time.day} `;
+	}
+
+	if (hours > 0 || days > 0) {
+		tooltipText += `${hours}${i18n.ts._time.hour} `;
+	}
+
+	tooltipText += `${minutes}${i18n.ts._time.minute}`;
+
+	return tooltipText;
+}
 </script>
 
 <style lang="scss" module>
