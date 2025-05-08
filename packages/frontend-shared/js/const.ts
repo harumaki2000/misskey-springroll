@@ -73,6 +73,8 @@ export const notificationTypes = [
 	'createToken',
 	'test',
 	'app',
+	'unfollow',
+	'blocked',
 ] as const;
 export const obsoleteNotificationTypes = ['pollVote', 'groupInvited'] as const;
 

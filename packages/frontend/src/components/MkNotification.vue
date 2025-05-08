@@ -44,6 +44,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
 			<i v-else-if="notification.type === 'createToken'" class="ti ti-key"></i>
 			<i v-else-if="notification.type === 'chatRoomInvitationReceived'" class="ti ti-messages"></i>
+			<i v-else-if="notification.type === 'unfollow'" class="ti ti-user-minus"></i>
+			<i v-else-if="notification.type === 'blocked'" class="ti ti-ban"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -73,6 +75,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'reaction:grouped'">{{ i18n.tsx._notification.reactedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'renote:grouped'">{{ i18n.tsx._notification.renotedBySomeUsers({ n: notification.users.length }) }}</span>
 			<span v-else-if="notification.type === 'app'">{{ notification.header }}</span>
+			<span v-else-if="notification.type === 'unfollow'">{{ i18n.ts._notification.unfollow }}</span>
+			<span v-else-if="notification.type === 'blocked'">{{ i18n.ts._notification.blocked }}</span>
 			<MkTime v-if="withTime" :time="notification.createdAt" :class="$style.headerTime"/>
 		</header>
 		<div>

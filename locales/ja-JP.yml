@@ -2669,6 +2669,8 @@ _notification:
   login: "ログインがありました"
   createToken: "アクセストークンが作成されました"
   createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
+  unfollow: "フォローが解除されました"
+  blocked: "ブロックされました"
 
   _types:
     all: "すべて"

@@ -10114,6 +10114,14 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * フォローが解除されました
+         */
+        "unfollow": string;
+        /**
+         * ブロックされました
+         */
+        "blocked": string;
         "_types": {
             /**
              * すべて

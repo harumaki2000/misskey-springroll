@@ -104,6 +104,16 @@ export type MiNotification = {
 	type: 'app';
 	id: string;
 	createdAt: string;
+} | {
+	type: 'unfollow';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+} | {
+	type: 'blocked';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
 
 	/**
 	 * アプリ通知のbody

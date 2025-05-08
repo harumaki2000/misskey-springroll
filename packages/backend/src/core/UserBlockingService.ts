@@ -23,6 +23,7 @@ import { UserFollowingService } from '@/core/UserFollowingService.js';
 
 @Injectable()
 export class UserBlockingService implements OnModuleInit {
+	[x: string]: any;
 	private logger: Logger;
 	private userFollowingService: UserFollowingService;
 
@@ -88,6 +89,10 @@ export class UserBlockingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(blocker) && this.userEntityService.isRemoteUser(blockee)) {
 			const content = this.apRendererService.addContext(this.apRendererService.renderBlock(blocking));
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
+		}
+
+		if (this.userEntityService.isLocalUser(blockee)) {
+			this.notificationService.createNotification(blockee.id, 'blocked', {}, blocker.id);
 		}
 	}
 
