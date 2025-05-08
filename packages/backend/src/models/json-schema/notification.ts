@@ -21,7 +21,7 @@ const baseSchema = {
 		type: {
 			type: 'string',
 			optional: false, nullable: false,
-			enum: [...notificationTypes, 'reaction:grouped', 'renote:grouped'],
+			enum: [...notificationTypes, 'reaction:grouped', 'renote:grouped', 'unfollow', 'blocked'],
 		},
 	},
 } as const;
@@ -432,6 +432,46 @@ export const packedNotificationSchema = {
 					ref: 'UserLite',
 					optional: false, nullable: false,
 				},
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['unfollow'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['blocked'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
 			},
 		},
 	}, {
