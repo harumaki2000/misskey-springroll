@@ -10199,6 +10199,14 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * フォロー解除通知
+             */
+            "unfollow": string;
+            /**
+             * ブロックされた通知
+             */
+            "blocked": string;
         };
         "_actions": {
             /**

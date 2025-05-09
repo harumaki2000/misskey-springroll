@@ -2692,6 +2692,8 @@ _notification:
     createToken: "アクセストークンの作成"
     test: "通知のテスト"
     app: "連携アプリからの通知"
+    unfollow: "フォロー解除通知"
+    blocked: "ブロックされた通知"
 
   _actions:
     followBack: "フォローバック"
