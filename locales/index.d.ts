@@ -311,6 +311,14 @@ export interface Locale extends ILocale {
      */
     "followRequestAccepted": string;
     /**
+     * フォローが解除されました
+     */
+    "yougotUnfollow": string;
+    /**
+     * ブロックされました
+     */
+    "youGotBlocked": string;
+    /**
      * メンション
      */
     "mention": string;
