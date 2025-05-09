@@ -1,7 +1,7 @@
 {
 	"type": "module",
 	"name": "misskey-js",
-	"version": "2025.5.0-springroll-v1.4.9",
+	"version": "2025.5.0-springroll-v1.5.0",
 	"description": "Misskey SDK for JavaScript",
 	"license": "MIT",
 	"main": "./built/index.js",
