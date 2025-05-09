@@ -17,6 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:class="[$style.subIcon, {
 				[$style.t_follow]: notification.type === 'follow',
 				[$style.t_followRequestAccepted]: notification.type === 'followRequestAccepted',
+				[$style.t_unfollow]: notification.type === 'unfollow',
+				[$style.t_blocked]: notification.type === 'blocked',
 				[$style.t_receiveFollowRequest]: notification.type === 'receiveFollowRequest',
 				[$style.t_renote]: notification.type === 'renote',
 				[$style.t_reply]: notification.type === 'reply',
@@ -44,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
 			<i v-else-if="notification.type === 'createToken'" class="ti ti-key"></i>
 			<i v-else-if="notification.type === 'chatRoomInvitationReceived'" class="ti ti-messages"></i>
-			<i v-else-if="notification.type === 'unfollow'" class="ti ti-user-minus"></i>
+			<i v-else-if="notification.type === 'unfollow'" class="ti ti-minus"></i>
 			<i v-else-if="notification.type === 'blocked'" class="ti ti-ban"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
@@ -75,8 +77,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'reaction:grouped'">{{ i18n.tsx._notification.reactedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'renote:grouped'">{{ i18n.tsx._notification.renotedBySomeUsers({ n: notification.users.length }) }}</span>
 			<span v-else-if="notification.type === 'app'">{{ notification.header }}</span>
-			<span v-else-if="notification.type === 'unfollow'">{{ i18n.ts._notification.unfollow }}</span>
-			<span v-else-if="notification.type === 'blocked'">{{ i18n.ts._notification.blocked }}</span>
 			<MkTime v-if="withTime" :time="notification.createdAt" :class="$style.headerTime"/>
 		</header>
 		<div>
@@ -124,6 +124,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkA>
 			<template v-else-if="notification.type === 'follow'">
 				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotNewFollower }}</span>
+			</template>
+			<template v-else-if="notification.type === 'unfollow'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.yougotUnfollow }}</span>
+			</template>
+			<template v-else-if="notification.type === 'blocked'">
+				<span :class="$style.text" style="opacity:0.6;">{{ i18n.ts.youGotBlocked }}</span>
 			</template>
 			<template v-else-if="notification.type === 'followRequestAccepted'">
 				<div :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.followRequestAccepted }}</div>
@@ -312,8 +318,13 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	}
 }
 
-.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest {
+.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest, .t_unfollow {
 	background: var(--eventFollow);
+	pointer-events: none;
+}
+
+.t_blocked {
+	background: var(--eventOther);
 	pointer-events: none;
 }
 
