@@ -23,6 +23,8 @@ type PushNotificationsTypes = {
 	};
 	'readAllNotifications': undefined;
 	newChatMessage: Packed<'ChatMessage'>;
+	'unfollow': Packed<'Notification'>;
+	'blocked': Packed<'Notification'>;
 };
 
 // Reduce length because push message servers have character limits

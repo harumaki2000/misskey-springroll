@@ -286,6 +286,32 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					renotify: true,
 				}];
 			}
+		case 'unfollow':
+			return [i18n.ts.yougotUnfollow, {
+				body: getUserName(data.body.user),
+				icon: data.body.user.avaterUrl ?? undefined,
+				badge: iconUrl('user-minus'),
+				data,
+				actions: [
+					{
+						action: 'showUser',
+						title: getUserName(data.body.user),
+					},
+				],
+			}];
+		case 'blocked':
+			return [i18n.ts.youGotBlocked, {
+				body: getUserName(data.body.user),
+				icon: data.body.user.avatarUrl ?? undefined,
+				badge: iconUrl('ban'),
+				data,
+				actions: [
+					{
+						action: 'showUser',
+						title: getUserName(data.body.user),
+					},
+				],
+			}];
 		default:
 			return null;
 	}

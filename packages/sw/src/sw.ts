@@ -77,6 +77,8 @@ globalThis.addEventListener('push', ev => {
 			case 'notification':
 			case 'unreadAntennaNote':
 			case 'newChatMessage':
+			case 'unfollow':
+			case 'blocked':
 				// 1日以上経過している場合は無視
 				if (Date.now() - data.dateTime > 1000 * 60 * 60 * 24) break;
 
@@ -117,6 +119,12 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 						break;
 					case 'renote':
 						if ('note' in data.body) await swos.api('notes/create', loginId, { renoteId: data.body.note.id });
+						break;
+					case 'unfollow':
+						client = await swos.openUser(Misskey.acct.toString(data.body.user), loginId);
+						break;
+					case 'blocked':
+						client = await swos.openUser(Misskey.acct.toString(data.body.user), loginId);
 						break;
 					case 'accept':
 						switch (data.body.type) {
