@@ -93,14 +93,8 @@ export class UserBlockingService implements OnModuleInit {
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
 		}
 
-		if (this.userEntityService.isLocalUser(blockee)) {
-			this.notificationService.createNotification(blockee.id, 'blocked', {
-				customBody: '',
-				customHeader: null,
-				customIcon: null,
-				appAccessTokenId: null,
-			}, blocker.id);
-		}
+		this.notificationService.createNotification(blockee.id, 'blocked', {
+		}, blocker.id);
 	}
 
 	@bindThis

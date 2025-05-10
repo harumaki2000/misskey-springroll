@@ -103,6 +103,8 @@ const event_reply = ref(webhook.on.includes('reply'));
 const event_renote = ref(webhook.on.includes('renote'));
 const event_reaction = ref(webhook.on.includes('reaction'));
 const event_mention = ref(webhook.on.includes('mention'));
+const event_unfollow = ref(webhook.on.includes('unfollow'));
+const event_blocked = ref(webhook.on.includes('blocked'));
 
 function save() {
 	const events: Misskey.entities.UserWebhook['on'] = [];
@@ -113,6 +115,8 @@ function save() {
 	if (event_renote.value) events.push('renote');
 	if (event_reaction.value) events.push('reaction');
 	if (event_mention.value) events.push('mention');
+	if (event_unfollow.value) events.push('unfollow');
+	if (event_blocked.value) events.push('blocked');
 
 	os.apiWithDialog('i/webhooks/update', {
 		name: name.value,
