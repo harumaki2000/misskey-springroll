@@ -42,6 +42,8 @@ export const notificationTypes = [
 	'createToken',
 	'app',
 	'test',
+	'unfollow',
+	'blocked',
 ] as const;
 
 export const groupedNotificationTypes = [

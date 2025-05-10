@@ -24,6 +24,12 @@ type PushNotificationDataSourceMap = {
 	};
 	readAllNotifications: undefined;
 	newChatMessage: Misskey.entities.ChatMessage;
+	unfollow: {
+		user: Misskey.entities.UserLite;
+	};
+	blocked: {
+		user: Misskey.entities.UserLite;
+	};
 };
 
 export type PushNotificationData<K extends keyof PushNotificationDataSourceMap> = {
@@ -52,4 +58,6 @@ export type BadgeNames =
 	| 'repeat'
 	| 'user-plus'
 	| 'users'
-	| 'login-2';
+	| 'login-2'
+	| 'user-minus'
+	| 'ban';
