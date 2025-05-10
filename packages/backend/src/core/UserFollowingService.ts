@@ -376,14 +376,8 @@ export class UserFollowingService implements OnModuleInit {
 			return;
 		}
 
-		if (this.userEntityService.isLocalUser(followee)) {
-			this.notificationService.createNotification(followee.id, 'unfollow', {
-				customBody: '',
-				customHeader: null,
-				customIcon: null,
-				appAccessTokenId: null,
-			}, follower.id);
-		}
+		this.notificationService.createNotification(followee.id, 'unfollow', {
+		}, follower.id);
 
 		await this.followingsRepository.delete(following.id);
 
