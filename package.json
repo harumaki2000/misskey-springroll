@@ -1,6 +1,6 @@
 {
 	"name": "misskey",
-	"version": "2025.5.1-beta.2-springroll-v1.5.3",
+	"version": "2025.5.1-beta.2-springroll-v1.5.4",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
