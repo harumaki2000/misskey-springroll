@@ -82,7 +82,6 @@ const props = withDefaults(defineProps<{
 	antenna?: string;
 	channel?: string;
 	role?: string;
-	mutual?: string;
 	sound?: boolean;
 	withRenotes?: boolean;
 	withReplies?: boolean;
@@ -259,10 +258,8 @@ function connectChannel() {
 			roleId: props.role,
 		});
 	} else if (props.src === 'mutual') {
-		if (props.mutual == null) return;
 		connection = stream.useChannel('mutualTimeline', {
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		});
 	}
@@ -338,7 +335,6 @@ function updatePaginationQuery() {
 		endpoint = 'notes/mutual-timeline';
 		query = {
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		};
 	} else {
