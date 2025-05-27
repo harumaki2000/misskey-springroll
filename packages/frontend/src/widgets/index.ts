@@ -39,6 +39,7 @@ export default function(app: App) {
 	app.component('WidgetCounter', defineAsyncComponent(() => import('./WidgetCounter.vue')));
 	app.component('WidgetEarthquake', defineAsyncComponent(() => import('./WidgetEarthquake.vue')));
 	app.component('WidgetTodoList', defineAsyncComponent(() => import('./WidgetTodoList.vue')));
+	app.component('WidgetTimer', defineAsyncComponent(() => import('./WidgetTimer.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
@@ -78,6 +79,7 @@ export const widgets = [
 	'counter',
 	'earthquake',
 	'todoList',
+	'timer',
 
 	...federationWidgets,
 ];

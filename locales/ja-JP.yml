@@ -2491,6 +2491,7 @@ _widgets:
   counter: "カウンター"
   earthquake: "地震情報"
   todoList: "ToDoリスト"
+  timer: "タイマー"
 
 _cw:
   hide: "隠す"
