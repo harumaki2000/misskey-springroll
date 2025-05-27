@@ -9484,6 +9484,10 @@ export interface Locale extends ILocale {
          * ToDoリスト
          */
         "todoList": string;
+        /**
+         * タイマー
+         */
+        "timer": string;
     };
     "_cw": {
         /**
