@@ -1335,6 +1335,10 @@ export interface Locale extends ILocale {
      */
     "syncDeviceDarkMode": string;
     /**
+     * 「{x}」がオンになっています。同期をオフにして手動でモードを切り替えますか？
+     */
+    "switchDarkModeManuallyWhenSyncEnabledConfirm": ParameterizedString<"x">;
+    /**
      * ドライブ
      */
     "drive": string;
@@ -9779,7 +9783,7 @@ export interface Locale extends ILocale {
          */
         "excludeInactiveUsers": string;
         /**
-         * インポートした人による返信をTLに含むようにする
+         * 返信をTLに含むかの情報がファイルにない場合に、インポートした人による返信をTLに含むようにする
          */
         "withReplies": string;
     };
