@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/utility/form.js';
@@ -59,6 +59,21 @@ const widgetPropsDef = {
 		type: 'string' as const,
 		default: 'タイマーが終了しました！',
 	},
+	isRunning: {
+		type: 'boolean' as const,
+		default: false,
+		hidden: true,
+	},
+	remainingSeconds: {
+		type: 'number' as const,
+		default: 0,
+		hidden: true,
+	},
+	startTime: {
+		type: 'number' as const,
+		deffault: 0,
+		hidden: true,
+	},
 };
 
 type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
@@ -66,7 +81,7 @@ type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
-const { widgetProps, configure } = useWidgetPropsManager(name,
+const { widgetProps, configure, save } = useWidgetPropsManager(name,
 	widgetPropsDef,
 	props,
 	emit,
@@ -80,6 +95,49 @@ const formatTime = (seconds: number): string => {
 	const mins = Math.floor(seconds / 60);
 	const secs = seconds % 60;
 	return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const saveState = () => {
+	widgetProps.isRunning = isRunning.value;
+	widgetProps.remainingSeconds = remainingTime.value;
+	widgetProps.startTime = isRunning.value ? Date.now() : 0;
+	save();
+};
+
+const restoreState = () => {
+	if (widgetProps.isRunning && widgetProps.startTime > 0) {
+		const elapsed = Math.floor((Date.now() - widgetProps.startTime) / 1000);
+		const remaining = Math.max(0, widgetProps.remainingSeconds - elapsed);
+
+		if (remaining > 0) {
+			remainingTime.value = remaining;
+			isRunning.value = true;
+			startInterval();
+		} else {
+			remainingTime.value = 0;
+			isRunning.value = false;
+			widgetProps.isRunning = false;
+			save();
+			showToast();
+		}
+	} else {
+		remainingTime.value = widgetProps.remainingSeconds || Math.min(widgetProps.timerMinutes, widgetProps.maxMinutes) * 60;
+		isRunning.value = false;
+	}
+};
+
+const startInterval = () => {
+	if (intervalId) return;
+
+	intervalId = window.setInterval(() => {
+		remainingTime.value--;
+		saveState();
+
+		if (remainingTime.value <= 0) {
+			stopTimer();
+			showToast();
+		}
+	}, 1000);
 };
 
 const stopTimer = () => {
@@ -117,13 +175,21 @@ const showToast = () => {
 };
 
 watch(() => [widgetProps.timerMinutes, widgetProps.maxMinutes], () => {
-	resetTimer();
+	if (!isRunning.value) {
+		resetTimer();
+	}
 });
 
-resetTimer();
+onMounted(() => {
+	restoreState();
+});
 
 onUnmounted(() => {
-	stopTimer();
+	if (intervalId) {
+		window.clearInterval(intervalId);
+		intervalId = null;
+	}
+	saveState();
 });
 
 defineExpose<WidgetComponentExpose>({
