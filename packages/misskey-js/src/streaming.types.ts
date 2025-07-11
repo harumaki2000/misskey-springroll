@@ -109,6 +109,16 @@ export type Channels = {
 		};
 		receives: null;
 	};
+	mutualTimeline: {
+		params: {
+			withRenotes?: boolean;
+			withFiles?: boolean;
+		};
+		events: {
+			note: (payload: Note) => void;
+		};
+		receives: null;
+	};
 	userList: {
 		params: {
 			listId: string;
