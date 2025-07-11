@@ -63,6 +63,7 @@ import { useDocumentVisibility } from '@@/js/use-document-visibility.js';
 import { getScrollContainer, scrollToTop } from '@@/js/scroll.js';
 import type { BasicTimelineType } from '@/timelines.js';
 import type { SoundStore } from '@/preferences/def.js';
+import type { IPaginator, MisskeyEntity } from '@/utility/paginator.js';
 import MkPullToRefresh from '@/components/MkPullToRefresh.vue';
 import { useStream } from '@/stream.js';
 import * as sound from '@/utility/sound.js';
@@ -76,7 +77,6 @@ import { i18n } from '@/i18n.js';
 import { globalEvents, useGlobalEvent } from '@/events.js';
 import { isSeparatorNeeded, getSeparatorInfo } from '@/utility/timeline-date-separate.js';
 import { Paginator } from '@/utility/paginator.js';
-import type { IPaginator, MisskeyEntity } from '@/utility/paginator.js';
 
 const props = withDefaults(defineProps<{
 	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role' | 'mutual';
@@ -142,6 +142,15 @@ if (props.src === 'antenna') {
 	paginator = markRaw(new Paginator('notes/global-timeline', {
 		computedParams: computed(() => ({
 			withRenotes: props.withRenotes,
+			withFiles: props.onlyFiles ? true : undefined,
+		})),
+		useShallowRef: true,
+	}));
+} else if (props.src === 'mutual') {
+	paginator = markRaw(new Paginator('notes/mutual-timeline', {
+		computedParams: computed(() => ({
+			withRenotes: props.withRenotes,
+			withReplies: props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
@@ -332,6 +341,11 @@ function connectChannel() {
 			withRenotes: props.withRenotes,
 			withFiles: props.onlyFiles ? true : undefined,
 		});
+	} else if (props.src === 'mutual') {
+		connection = stream.useChannel('mutualTimeline', {
+			withRenotes: props.withRenotes,
+			withFiles: props.onlyFiles ? true : undefined,
+		});
 	} else if (props.src === 'mentions') {
 		connection = stream.useChannel('main');
 		connection.on('mention', prepend);
@@ -359,11 +373,6 @@ function connectChannel() {
 		if (props.role == null) return;
 		connection = stream.useChannel('roleTimeline', {
 			roleId: props.role,
-		});
-	} else if (props.src === 'mutual') {
-		connection = stream.useChannel('mutualTimeline', {
-			withRenotes: props.withRenotes,
-			withFiles: props.onlyFiles ? true : undefined,
 		});
 	}
 	if (props.src !== 'directs' && props.src !== 'mentions') connection?.on('note', prepend);

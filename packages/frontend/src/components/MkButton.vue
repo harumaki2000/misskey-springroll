@@ -94,11 +94,15 @@ function onMousedown(evt: MouseEvent): void {
 	const rect = target.getBoundingClientRect();
 
 	const ripple = window.document.createElement('div');
-	ripple.classList.add(ripples.value!.dataset.childrenClass!);
+	if (ripples.value && ripples.value.dataset.childrenClass) {
+		ripple.classList.add(ripples.value.dataset.childrenClass);
+	}
 	ripple.style.top = (evt.clientY - rect.top - 1).toString() + 'px';
 	ripple.style.left = (evt.clientX - rect.left - 1).toString() + 'px';
 
-	ripples.value!.appendChild(ripple);
+	if (ripples.value) {
+		ripples.value.appendChild(ripple);
+	} 
 
 	const circleCenterX = evt.clientX - rect.left;
 	const circleCenterY = evt.clientY - rect.top;
