@@ -4,33 +4,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkContainer :showHeader="widgetProps.showHeader" data-cy-mkw-todoList class="mkw-todoList">
-	<template #icon><i class="ti ti-list-check"></i></template>
-	<template #header>{{ i18n.ts._widgets.todoList }}</template>
-	<template #func="{ buttonStyleClass }">
-		<button class="_button" :class="buttonStyleClass" @click="saveList"><i class="ti ti-check"></i></button>
-	</template>
-	<div :class="$style.root">
-		<div :class="$style.inputWrapper">
-			<input v-model="newTask" :placeholder="i18n.ts.placeholder" @keyup.enter="addTask" @input="onChange"/>
-			<MkButton primary @click="addTask">追加</MkButton>
-		</div>
+	<MkContainer :showHeader="widgetProps.showHeader" data-cy-mkw-todoList class="mkw-todoList">
+		<template #icon><i class="ti ti-list-check"></i></template>
+		<template #header>{{ i18n.ts._widgets.todoList }}</template>
+		<template #func="{ buttonStyleClass }">
+			<button class="_button" :class="buttonStyleClass" @click="saveList"><i class="ti ti-check"></i></button>
+		</template>
+		<div :class="$style.root">
+			<div :class="$style.inputWrapper">
+				<input v-model="newTask" :placeholder="i18n.ts.placeholder === 'string' ? i18n.ts.placeholder : ''" @keyup.enter="addTask" @input="onChange" />
+				<MkButton primary @click="addTask">追加</MkButton>
+			</div>
 
-		<ul>
-			<li v-for="(task, index) in tasks" :key="index">
-				<span :class="{ completed: task.completed }">{{ task.text }}</span>
-				<MkButton primary @click="removeTask(index)">完了</MkButton>
-			</li>
-		</ul>
-	</div>
-</MkContainer>
+			<ul v-if="tasks && tasks.length > 0">
+				<li v-for="(task, index) in tasks" :key="`task-${index}`">
+					<span v-if="task" :class="{ completed: task.completed }">{{ task.text }}</span>
+					<MkButton primary @click="removeTask(index)">完了</MkButton>
+				</li>
+			</ul>
+			<div v-else class="empty-state">
+				タスクがありません
+			</div>
+		</div>
+	</MkContainer>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
-import type { GetFormResultType } from '@/scripts/form.js';
+import type { GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
@@ -61,16 +64,17 @@ interface Task {
 	completed: boolean;
 }
 
-const tasks = ref<Task[]>(store.s.todoList);
+const tasks = ref<Task[]>(store.s.todoList || []);
 const newTask = ref('');
 let timeoutId: number | null = null;
 
 const addTask = (): void => {
-	const taskText = newTask.value.trim();
-	if (!taskText) return;
+	const taskText = newTask.value?.trim();
+	if (!taskText || !tasks.value) return;
 
 	tasks.value.push({ text: taskText, completed: false });
 	newTask.value = '';
+	saveList();
 };
 
 const saveList = () => {
@@ -83,12 +87,23 @@ const onChange = () => {
 };
 
 watch(() => store.r.todoList, (newTasks) => {
-	tasks.value = newTasks;
+	if (newTasks && Array.isArray(newTasks)) {
+		tasks.value = newTasks;
+	}
 });
 
 const removeTask = (index: number): void => {
-	tasks.value.splice(index, 1);
+	if (tasks.value && index >= 0 && index < tasks.value.length) {
+		tasks.value.splice(index, 1);
+		saveList();
+	}
 };
+
+onMounted(() => {
+	if (!store.s.todoList) {
+		store.set('todoList', []);
+	}
+});
 
 defineExpose<WidgetComponentExpose>({
 	name,
