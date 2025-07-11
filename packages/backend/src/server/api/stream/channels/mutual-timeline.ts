@@ -24,6 +24,7 @@ class MutualTimelineChannel extends Channel {
 	private withReplies: boolean;
 	private withFiles: boolean;
 	private mutualFollowUserIds: string[] = [];
+	private mutualFollowings: Record<string, { withReplies: boolean }> = {};
 
 	constructor(
 		private metaService: MetaService,
@@ -48,13 +49,15 @@ class MutualTimelineChannel extends Channel {
 		this.withFiles = !!(params.withFiles ?? false);
 
 		if (this.user) {
-			const followings = await this.cacheService.userFollowingsCache.fetch(this.user.id);
 			const followees = await this.userFollowingService.getFollowees(this.user.id);
-			const mutualFollowUserIds: string[] = [];
+			const followingsCache = await this.cacheService.userFollowingsCache.fetch(this.user.id);
 
 			for (const followee of followees) {
 				if (await this.userFollowingService.isMutual(this.user.id, followee.followeeId)) {
-					mutualFollowUserIds.push(followee.followeeId);
+					this.mutualFollowUserIds.push(followee.followeeId);
+					this.mutualFollowings[followee.followeeId] = {
+						withReplies: followingsCache[followee.followeeId]?.withReplies ?? false,
+					};
 				}
 			}
 
@@ -63,18 +66,24 @@ class MutualTimelineChannel extends Channel {
 	}
 
 	@bindThis
+	private isMutualFollow(userId: string): boolean {
+		return this.mutualFollowUserIds.includes(userId);
+	}
+
+	@bindThis
 	private async onNote(note: Packed<'Note'>) {
 		if (this.withFiles && (note.fileIds == null || note.fileIds.length === 0)) return;
 
 		const isMe = this.user!.id === note.userId;
-		if (!isMe && !this.mutualFollowUserIds.includes(note.userId)) return;
+		if (!isMe && !this.isMutualFollow(note.userId)) return;
 
-		if (note.visibility !== 'public' && note.visibility !== 'home' && note.visibility !== 'followers') {
-			if (note.visibility === 'specified') {
-				if (!isMe && !note.visibleUserIds!.includes(this.user!.id)) return;
-			} else {
-				return;
-			}
+		if (note.visibility === 'followers') {
+			// followers投稿の場合、相互フォロー関係を再確認
+			if (!isMe && !this.isMutualFollow(note.userId)) return;
+		} else if (note.visibility === 'specified') {
+			if (!isMe && !note.visibleUserIds!.includes(this.user!.id)) return;
+		} else if (note.visibility !== 'public' && note.visibility !== 'home') {
+			return;
 		}
 
 		if (note.channelId != null) return;
@@ -84,10 +93,28 @@ class MutualTimelineChannel extends Channel {
 
 		if (note.reply && !this.withReplies) {
 			const reply = note.reply;
-			if (reply.userId !== this.user!.id && !isMe && reply.userId !== note.userId) return;
+			// 相互フォローユーザーのwithReplies設定をチェック
+			const isMutualWithReplies = this.isMutualFollow(note.userId) &&
+				this.mutualFollowings[note.userId]?.withReplies;
+
+			if (!isMutualWithReplies) {
+				// 「チャンネル接続主への返信」でもなければ、「チャンネル接続主が行った返信」でもなければ、「投稿者の投稿者自身への返信」でもない場合
+				if (reply.userId !== this.user!.id && !isMe && reply.userId !== note.userId) return;
+			} else {
+				// withRepliesが有効でも、followers投稿への返信は相互フォロー関係をチェック
+				if (reply.visibility === 'followers' && !this.isMutualFollow(reply.userId) && reply.userId !== this.user!.id) return;
+			}
 		}
 
-		if (isRenotePacked(note) && !isQuotePacked(note) && !this.withRenotes) return;
+		// 純粋なリノート（引用リノートでないリノート）の場合
+		if (isRenotePacked(note) && !isQuotePacked(note) && note.renote) {
+			if (!this.withRenotes) return;
+			if (note.renote.reply) {
+				const reply = note.renote.reply;
+				// 相互フォローしていないユーザーの visibility: followers な投稿への返信のリノートは弾く
+				if (reply.visibility === 'followers' && !this.isMutualFollow(reply.userId) && reply.userId !== this.user!.id) return;
+			}
+		}
 
 		if (this.isNoteMutedOrBlocked(note)) return;
 
