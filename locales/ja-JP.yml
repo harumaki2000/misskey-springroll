@@ -2504,6 +2504,7 @@ _widgets:
   earthquake: "地震情報"
   todoList: "ToDoリスト"
   timer: "タイマー"
+  weather: "天気予報"
 
 _cw:
   hide: "隠す"

@@ -9530,6 +9530,10 @@ export interface Locale extends ILocale {
          * タイマー
          */
         "timer": string;
+        /**
+         * 天気予報
+         */
+        "weather": string;
     };
     "_cw": {
         /**
