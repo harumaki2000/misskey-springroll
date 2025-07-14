@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
-import type { UserApplicationsRepository } from '@/models/_.js';
+import type { UserApplicationsRepository, UserProfilesRepository } from '@/models/_.js';
 import type { MiUser } from '@/models/User.js';
 import { MiUserApplication } from '@/models/UserApplication.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
@@ -24,6 +24,10 @@ export class UserApplicationService {
 
 		@Inject(DI.userApplicationsRepository)
 		private userApplicationsRepository: UserApplicationsRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
 		private signupService: SignupService,
 		private emailService: EmailService,
 		private metaService: MetaService,
@@ -62,6 +66,11 @@ export class UserApplicationService {
 		const { account } = await this.signupService.signup({
 			username: application.username,
 			passwordHash: application.passwordHash,
+		});
+
+		await this.userProfilesRepository.update({ userId: account.id }, {
+			email: application.email,
+			emailVerified: true,
 		});
 
 		// 申請情報を更新
