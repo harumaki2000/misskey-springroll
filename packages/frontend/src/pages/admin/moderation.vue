@@ -20,6 +20,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts.emailRequiredForSignup }} ({{ i18n.ts.recommended }})</template>
 				</MkSwitch>
 
+				<MkSwitch v-model="requireApplicationForSignup" @change="onChange_requireApplicationForSignup">
+					<template #label>{{ i18n.ts.requireApplicationForSignup }}</template>
+					<template #caption>
+						<div>{{ i18n.ts.requireApplicationForSignupDescription }}</div>
+						<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts.requireApplicationForSignupWarning }}</div>
+					</template>
+				</MkSwitch>
+
 				<MkSelect v-model="ugcVisibilityForVisitor" @update:modelValue="onChange_ugcVisibilityForVisitor">
 					<template #label>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor }}</template>
 					<option value="all">{{ i18n.ts._serverSettings._userGeneratedContentsVisibilityForVisitor.all }}</option>
@@ -152,6 +160,7 @@ import MkSelect from '@/components/MkSelect.vue';
 
 const enableRegistration = ref<boolean>(false);
 const emailRequiredForSignup = ref<boolean>(false);
+const requireApplicationForSignup = ref<boolean>(false);
 const ugcVisibilityForVisitor = ref<string>('all');
 const sensitiveWords = ref<string>('');
 const prohibitedWords = ref<string>('');
@@ -166,6 +175,7 @@ async function init() {
 	const meta = await misskeyApi('admin/meta');
 	enableRegistration.value = !meta.disableRegistration;
 	emailRequiredForSignup.value = meta.emailRequiredForSignup;
+	requireApplicationForSignup.value = meta.requireApplicationForSignup;
 	ugcVisibilityForVisitor.value = meta.ugcVisibilityForVisitor;
 	sensitiveWords.value = meta.sensitiveWords.join('\n');
 	prohibitedWords.value = meta.prohibitedWords.join('\n');
@@ -198,6 +208,14 @@ async function onChange_enableRegistration(value: boolean) {
 function onChange_emailRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		emailRequiredForSignup: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_requireApplicationForSignup(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		requireApplicationForSignup: value,
 	}).then(() => {
 		fetchInstance(true);
 	});

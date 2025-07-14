@@ -1251,6 +1251,54 @@ export interface Locale extends ILocale {
      */
     "agree": string;
     /**
+     * 承認する
+     */
+    "approve": string;
+    /**
+     * 申請承認制を有効にする
+     */
+    "requireApplicationForSignup": string;
+    /**
+     * 有効にすると、新規登録者は管理者の承認を得るまでログインできなくなります。
+     */
+    "requireApplicationForSignupDescription": string;
+    /**
+     * この設定は「登録を締め切る」がOFFの場合にのみ機能します。
+     */
+    "requireApplicationForSignupWarning": string;
+    /**
+     * 申請理由
+     */
+    "reason": string;
+    /**
+     * 承認待ち
+     */
+    "pending": string;
+    /**
+     * 承認済み
+     */
+    "approved": string;
+    /**
+     * 却下済み
+     */
+    "rejected": string;
+    /**
+     * 処理者
+     */
+    "reviewedBy": string;
+    /**
+     * 処理日時
+     */
+    "reviewedAt": string;
+    /**
+     * 申請を送信しました
+     */
+    "applicationSubmitted": string;
+    /**
+     * 管理者の承認をお待ちください。
+     */
+    "waitForAdminApproval": string;
+    /**
      * 下記に同意する
      */
     "agreeBelow": string;
@@ -11984,6 +12032,26 @@ export interface Locale extends ILocale {
              * 不特定多数の利用者を受け入れる運営を行う
              */
             "open_description": string;
+        };
+    };
+    "_admin": {
+        "approvals": {
+            /**
+             * 申請の承認
+             */
+            "title": string;
+            /**
+             * 承認待ち
+             */
+            "pending": string;
+            /**
+             * 承認済み
+             */
+            "approved": string;
+            /**
+             * 却下済み
+             */
+            "rejected": string;
         };
         /**
          * 不特定多数の利用者を受け入れることはリスクが伴います。トラブルに対処できるよう、確実なモデレーション体制で運営することを推奨します。

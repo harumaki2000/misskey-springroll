@@ -104,6 +104,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/admin/overview',
 		active: currentPage.value?.route.name === 'overview',
 	}, {
+		icon: 'ti ti-user-check',
+		text: i18n.ts._admin.approvals.title,
+		to: '/admin/approvals',
+		active: currentPage.value?.route.name === 'approvals',
+	}, {
 		icon: 'ti ti-users',
 		text: i18n.ts.users,
 		to: '/admin/users',
