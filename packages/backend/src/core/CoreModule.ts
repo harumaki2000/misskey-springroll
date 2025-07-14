@@ -58,6 +58,7 @@ import { SignupService } from './SignupService.js';
 import { WebAuthnService } from './WebAuthnService.js';
 import { UserBlockingService } from './UserBlockingService.js';
 import { CacheService } from './CacheService.js';
+import { UserApplicationService } from './UserApplicationService.js';
 import { UserService } from './UserService.js';
 import { UserFollowingService } from './UserFollowingService.js';
 import { UserKeypairService } from './UserKeypairService.js';
@@ -124,6 +125,7 @@ import { NotificationEntityService } from './entities/NotificationEntityService.
 import { PageEntityService } from './entities/PageEntityService.js';
 import { PageLikeEntityService } from './entities/PageLikeEntityService.js';
 import { SigninEntityService } from './entities/SigninEntityService.js';
+import { UserApplicationEntityService } from './entities/UserApplicationEntityService.js';
 import { UserEntityService } from './entities/UserEntityService.js';
 import { UserListEntityService } from './entities/UserListEntityService.js';
 import { FlashEntityService } from './entities/FlashEntityService.js';
@@ -203,6 +205,7 @@ const $WebAuthnService: Provider = { provide: 'WebAuthnService', useExisting: We
 const $UserBlockingService: Provider = { provide: 'UserBlockingService', useExisting: UserBlockingService };
 const $CacheService: Provider = { provide: 'CacheService', useExisting: CacheService };
 const $UserService: Provider = { provide: 'UserService', useExisting: UserService };
+const $UserApplicationService: Provider = { provide: 'UserApplicationService', useExisting: UserApplicationService };
 const $UserFollowingService: Provider = { provide: 'UserFollowingService', useExisting: UserFollowingService };
 const $UserKeypairService: Provider = { provide: 'UserKeypairService', useExisting: UserKeypairService };
 const $UserListService: Provider = { provide: 'UserListService', useExisting: UserListService };
@@ -274,6 +277,7 @@ const $NotificationEntityService: Provider = { provide: 'NotificationEntityServi
 const $PageEntityService: Provider = { provide: 'PageEntityService', useExisting: PageEntityService };
 const $PageLikeEntityService: Provider = { provide: 'PageLikeEntityService', useExisting: PageLikeEntityService };
 const $SigninEntityService: Provider = { provide: 'SigninEntityService', useExisting: SigninEntityService };
+const $UserApplicationEntityService: Provider = { provide: 'UserApplicationEntityService', useExisting: UserApplicationEntityService };
 const $UserEntityService: Provider = { provide: 'UserEntityService', useExisting: UserEntityService };
 const $UserListEntityService: Provider = { provide: 'UserListEntityService', useExisting: UserListEntityService };
 const $FlashEntityService: Provider = { provide: 'FlashEntityService', useExisting: FlashEntityService };
@@ -356,6 +360,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		UserBlockingService,
 		CacheService,
 		UserService,
+		UserApplicationService,
 		UserFollowingService,
 		UserKeypairService,
 		UserListService,
@@ -427,6 +432,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		PageEntityService,
 		PageLikeEntityService,
 		SigninEntityService,
+		UserApplicationEntityService,
 		UserEntityService,
 		UserListEntityService,
 		FlashEntityService,
@@ -504,6 +510,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$UserBlockingService,
 		$CacheService,
 		$UserService,
+		$UserApplicationService,
 		$UserFollowingService,
 		$UserKeypairService,
 		$UserListService,
@@ -575,6 +582,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$PageEntityService,
 		$PageLikeEntityService,
 		$SigninEntityService,
+		$UserApplicationEntityService,
 		$UserEntityService,
 		$UserListEntityService,
 		$FlashEntityService,
@@ -654,6 +662,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		UserBlockingService,
 		CacheService,
 		UserService,
+		UserApplicationService,
 		UserFollowingService,
 		UserKeypairService,
 		UserListService,
@@ -724,6 +733,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		PageEntityService,
 		PageLikeEntityService,
 		SigninEntityService,
+		UserApplicationEntityService,
 		UserEntityService,
 		UserListEntityService,
 		FlashEntityService,
@@ -801,6 +811,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$UserBlockingService,
 		$CacheService,
 		$UserService,
+		$UserApplicationService,
 		$UserFollowingService,
 		$UserKeypairService,
 		$UserListService,
@@ -870,6 +881,7 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$PageEntityService,
 		$PageLikeEntityService,
 		$SigninEntityService,
+		$UserApplicationEntityService,
 		$UserEntityService,
 		$UserListEntityService,
 		$FlashEntityService,

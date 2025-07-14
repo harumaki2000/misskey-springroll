@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { IsNull } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
+import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, UserApplicationsRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { IdService } from '@/core/IdService.js';
@@ -45,6 +45,9 @@ export class SignupApiService {
 		@Inject(DI.registrationTicketsRepository)
 		private registrationTicketsRepository: RegistrationTicketsRepository,
 
+		@Inject(DI.userApplicationsRepository)
+		private userApplicationsRepository: UserApplicationsRepository,
+
 		private userEntityService: UserEntityService,
 		private idService: IdService,
 		private captchaService: CaptchaService,
@@ -63,6 +66,7 @@ export class SignupApiService {
 				host?: string;
 				invitationCode?: string;
 				emailAddress?: string;
+				reason?: string;
 				'hcaptcha-response'?: string;
 				'g-recaptcha-response'?: string;
 				'turnstile-response'?: string;
@@ -74,170 +78,105 @@ export class SignupApiService {
 	) {
 		const body = request.body;
 
-		// Verify *Captcha
-		// ただしテスト時はこの機構は障害となるため無効にする
 		if (process.env.NODE_ENV !== 'test') {
 			if (this.meta.enableHcaptcha && this.meta.hcaptchaSecretKey) {
-				await this.captchaService.verifyHcaptcha(this.meta.hcaptchaSecretKey, body['hcaptcha-response']).catch(err => {
-					throw new FastifyReplyError(400, err);
-				});
+				await this.captchaService.verifyHcaptcha(this.meta.hcaptchaSecretKey, body['hcaptcha-response']).catch(err => { throw new FastifyReplyError(400, err); });
 			}
-
 			if (this.meta.enableMcaptcha && this.meta.mcaptchaSecretKey && this.meta.mcaptchaSitekey && this.meta.mcaptchaInstanceUrl) {
-				await this.captchaService.verifyMcaptcha(this.meta.mcaptchaSecretKey, this.meta.mcaptchaSitekey, this.meta.mcaptchaInstanceUrl, body['m-captcha-response']).catch(err => {
-					throw new FastifyReplyError(400, err);
-				});
+				await this.captchaService.verifyMcaptcha(this.meta.mcaptchaSecretKey, this.meta.mcaptchaSitekey, this.meta.mcaptchaInstanceUrl, body['m-captcha-response']).catch(err => { throw new FastifyReplyError(400, err); });
 			}
-
 			if (this.meta.enableRecaptcha && this.meta.recaptchaSecretKey) {
-				await this.captchaService.verifyRecaptcha(this.meta.recaptchaSecretKey, body['g-recaptcha-response']).catch(err => {
-					throw new FastifyReplyError(400, err);
-				});
+				await this.captchaService.verifyRecaptcha(this.meta.recaptchaSecretKey, body['g-recaptcha-response']).catch(err => { throw new FastifyReplyError(400, err); });
 			}
-
 			if (this.meta.enableTurnstile && this.meta.turnstileSecretKey) {
-				await this.captchaService.verifyTurnstile(this.meta.turnstileSecretKey, body['turnstile-response']).catch(err => {
-					throw new FastifyReplyError(400, err);
-				});
+				await this.captchaService.verifyTurnstile(this.meta.turnstileSecretKey, body['turnstile-response']).catch(err => { throw new FastifyReplyError(400, err); });
 			}
-
 			if (this.meta.enableTestcaptcha) {
-				await this.captchaService.verifyTestcaptcha(body['testcaptcha-response']).catch(err => {
-					throw new FastifyReplyError(400, err);
-				});
+				await this.captchaService.verifyTestcaptcha(body['testcaptcha-response']).catch(err => { throw new FastifyReplyError(400, err); });
 			}
 		}
 
-		const username = body['username'];
-		const password = body['password'];
+		const { username, password, invitationCode, emailAddress, reason } = body;
 		const host: string | null = process.env.NODE_ENV === 'test' ? (body['host'] ?? null) : null;
-		const invitationCode = body['invitationCode'];
-		const emailAddress = body['emailAddress'];
 
-		if (this.meta.emailRequiredForSignup) {
-			if (emailAddress == null || typeof emailAddress !== 'string') {
-				reply.code(400);
-				return;
-			}
-
+		if (await this.usersRepository.exists({ where: { usernameLower: username.toLowerCase(), host: IsNull() } })) {
+			throw new FastifyReplyError(400, 'DUPLICATED_USERNAME');
+		}
+		if (await this.usedUsernamesRepository.exists({ where: { username: username.toLowerCase() } })) {
+			throw new FastifyReplyError(400, 'USED_USERNAME');
+		}
+		const isPreserved = this.meta.preservedUsernames.map(x => x.toLowerCase()).includes(username.toLowerCase());
+		if (isPreserved) {
+			throw new FastifyReplyError(400, 'DENIED_USERNAME');
+		}
+		if (this.meta.emailRequiredForSignup || this.meta.requireApplicationForSignup) {
+			if (!emailAddress) throw new FastifyReplyError(400, 'EMAIL_REQUIRED');
 			const res = await this.emailService.validateEmailForAccount(emailAddress);
-			if (!res.available) {
-				reply.code(400);
-				return;
-			}
+			if (!res.available) throw new FastifyReplyError(400, 'EMAIL_TAKEN');
 		}
 
 		let ticket: MiRegistrationTicket | null = null;
-
 		if (this.meta.disableRegistration) {
-			if (invitationCode == null || typeof invitationCode !== 'string') {
-				reply.code(400);
-				return;
-			}
-
-			ticket = await this.registrationTicketsRepository.findOneBy({
-				code: invitationCode,
-			});
-
-			if (ticket == null || ticket.usedById != null) {
-				reply.code(400);
-				return;
-			}
-
-			if (ticket.expiresAt && ticket.expiresAt < new Date()) {
-				reply.code(400);
-				return;
-			}
-
-			// メアド認証が有効の場合
-			if (this.meta.emailRequiredForSignup) {
-				// メアド認証済みならエラー
-				if (ticket.usedBy) {
-					reply.code(400);
-					return;
-				}
-
-				// 認証しておらず、メール送信から30分以内ならエラー
-				if (ticket.usedAt && ticket.usedAt.getTime() + (1000 * 60 * 30) > Date.now()) {
-					reply.code(400);
-					return;
-				}
-			} else if (ticket.usedAt) {
-				reply.code(400);
-				return;
-			}
+			if (!invitationCode) throw new FastifyReplyError(400, 'INVITATION_CODE_REQUIRED');
+			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
+			if (!ticket || ticket.usedById != null) throw new FastifyReplyError(400, 'INVITATION_CODE_INVALID');
+			if (ticket.expiresAt && ticket.expiresAt < new Date()) throw new FastifyReplyError(400, 'INVITATION_CODE_EXPIRED');
 		}
 
-		if (this.meta.emailRequiredForSignup) {
-			if (await this.usersRepository.exists({ where: { usernameLower: username.toLowerCase(), host: IsNull() } })) {
-				throw new FastifyReplyError(400, 'DUPLICATED_USERNAME');
-			}
+		const salt = await bcrypt.genSalt(8);
+		const passwordHash = await bcrypt.hash(password, salt);
 
-			// Check deleted username duplication
-			if (await this.usedUsernamesRepository.exists({ where: { username: username.toLowerCase() } })) {
-				throw new FastifyReplyError(400, 'USED_USERNAME');
-			}
+		if (this.meta.requireApplicationForSignup) {
+			await this.userApplicationsRepository.insertOne({
+				id: this.idService.gen(),
+				username,
+				email: emailAddress!,
+				passwordHash,
+				reason: reason ?? '',
+			});
 
-			const isPreserved = this.meta.preservedUsernames.map(x => x.toLowerCase()).includes(username.toLowerCase());
-			if (isPreserved) {
-				throw new FastifyReplyError(400, 'DENIED_USERNAME');
-			}
+			const subject = `[${this.meta.name}] 登録申請を受け付けました`;
+			const textContent = `${username}\n\n${this.meta.name}への登録申請を受け付けました。\n管理者の承認が完了するまで、今しばらくお待ちください。`;
+			const htmlContent = textContent.replace(/\n/g, '<br>');
+			this.emailService.sendEmail(emailAddress!, subject, htmlContent, textContent);
 
+			reply.code(204);
+			return;
+		} else if (this.meta.emailRequiredForSignup) {
 			const code = secureRndstr(16, { chars: L_CHARS });
-
-			// Generate hash of password
-			const salt = await bcrypt.genSalt(8);
-			const hash = await bcrypt.hash(password, salt);
-
 			const pendingUser = await this.userPendingsRepository.insertOne({
 				id: this.idService.gen(),
 				code,
 				email: emailAddress!,
-				username: username,
-				password: hash,
+				username,
+				password: passwordHash,
 			});
-
 			const link = `${this.config.url}/signup-complete/${code}`;
-
 			this.emailService.sendEmail(emailAddress!, 'Signup',
 				`To complete signup, please click this link:<br><a href="${link}">${link}</a>`,
 				`To complete signup, please click this link: ${link}`);
-
 			if (ticket) {
 				await this.registrationTicketsRepository.update(ticket.id, {
 					usedAt: new Date(),
 					pendingUserId: pendingUser.id,
 				});
 			}
-
 			reply.code(204);
 			return;
 		} else {
-			try {
-				const { account, secret } = await this.signupService.signup({
-					username, password, host,
+			const { account, secret } = await this.signupService.signup({ username, passwordHash, host });
+			if (ticket) {
+				await this.registrationTicketsRepository.update(ticket.id, {
+					usedAt: new Date(),
+					usedBy: account,
+					usedById: account.id,
 				});
-
-				const res = await this.userEntityService.pack(account, account, {
-					schema: 'MeDetailed',
-					includeSecrets: true,
-				});
-
-				if (ticket) {
-					await this.registrationTicketsRepository.update(ticket.id, {
-						usedAt: new Date(),
-						usedBy: account,
-						usedById: account.id,
-					});
-				}
-
-				return {
-					...res,
-					token: secret,
-				};
-			} catch (err) {
-				throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 			}
+			const res = await this.userEntityService.pack(account, account, {
+				schema: 'MeDetailed',
+				includeSecrets: true,
+			});
+			return { ...res, token: secret };
 		}
 	}
 

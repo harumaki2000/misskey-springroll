@@ -130,6 +130,8 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'approveUserApplication',
+	'rejectUserApplication',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -389,6 +391,13 @@ export type ModerationLogPayloads = {
 	updateProxyAccountDescription: {
 		before: string | null;
 		after: string | null;
+	};
+	approveUserApplication: {
+		applicationId: string;
+		userId: string;
+	};
+	rejectUserApplication: {
+		applicationId: string;
 	};
 };
 

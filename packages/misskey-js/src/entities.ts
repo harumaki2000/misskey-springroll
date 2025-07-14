@@ -261,6 +261,7 @@ export type SignupRequest = {
 	host?: string;
 	invitationCode?: string;
 	emailAddress?: string;
+	reason?: string;
 	'hcaptcha-response'?: string | null;
 	'g-recaptcha-response'?: string | null;
 	'turnstile-response'?: string | null;

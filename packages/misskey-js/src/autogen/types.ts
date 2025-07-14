@@ -160,6 +160,36 @@ export type paths = {
          */
         post: operations['admin___announcements___update'];
     };
+    '/admin/applications/approve': {
+        /**
+         * admin/applications/approve
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:user-applications*
+         */
+        post: operations['admin___applications___approve'];
+    };
+    '/admin/applications/list': {
+        /**
+         * admin/applications/list
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:user-applications*
+         */
+        post: operations['admin___applications___list'];
+    };
+    '/admin/applications/reject': {
+        /**
+         * admin/applications/reject
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:user-applications*
+         */
+        post: operations['admin___applications___reject'];
+    };
     '/admin/avatar-decorations/create': {
         /**
          * admin/avatar-decorations/create
@@ -3967,6 +3997,18 @@ export type components = {
                 displayOrder: number;
             }[];
         };
+		UserApplication: {
+			id: string;
+			/** Format: date-time */
+			createdAt: string;
+			username: string;
+			email: string;
+			reason: string | null;
+			state: string;
+			/** Format: date-time */
+			reviewedAt: string | null;
+			reviewedBy: components['schemas']['UserLite'] | null;
+		},
         UserDetailedNotMeOnly: {
             /** Format: url */
             url: string | null;
@@ -5341,6 +5383,7 @@ export type components = {
             defaultLightTheme: string | null;
             disableRegistration: boolean;
             emailRequiredForSignup: boolean;
+						requireApplicationForSignup: boolean;
             enableHcaptcha: boolean;
             hcaptchaSiteKey: string | null;
             enableMcaptcha: boolean;
@@ -5419,6 +5462,7 @@ export type components = {
             features?: {
                 registration: boolean;
                 emailRequiredForSignup: boolean;
+								requireApplicationForSignup: boolean;
                 localTimeline: boolean;
                 globalTimeline: boolean;
                 hcaptcha: boolean;
@@ -6770,6 +6814,226 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    admin___applications___approve: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    applicationId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': Record<string, never>;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    admin___applications___list: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 30 */
+                    limit?: number;
+                    /** @default 0 */
+                    offset?: number;
+                    /**
+                     * @default -createdAt
+                     * @enum {string}
+                     */
+                    sort?: '+createdAt' | '-createdAt';
+                    /**
+                     * @default pending
+                     * @enum {string}
+                     */
+                    state?: 'pending' | 'approved' | 'rejected' | 'all';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        username: string;
+                        email: string;
+                        reason: string | null;
+                        state: 'pending' | 'approved' | 'rejected';
+                        /** Format: date-time */
+                        reviewedAt: string | null;
+                        reviewedBy: components['schemas']['UserLite'] | null;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    admin___applications___reject: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    applicationId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': Record<string, never>;
                 };
             };
             /** @description Client error */
@@ -9259,6 +9523,7 @@ export interface operations {
                         cacheRemoteFiles: boolean;
                         cacheRemoteSensitiveFiles: boolean;
                         emailRequiredForSignup: boolean;
+                        requireApplicationForSignup: boolean;
                         enableHcaptcha: boolean;
                         hcaptchaSiteKey: string | null;
                         enableMcaptcha: boolean;
@@ -12515,6 +12780,7 @@ export interface operations {
                     cacheRemoteFiles?: boolean;
                     cacheRemoteSensitiveFiles?: boolean;
                     emailRequiredForSignup?: boolean;
+                    requireApplicationForSignup?: boolean;
                     enableHcaptcha?: boolean;
                     hcaptchaSiteKey?: string | null;
                     hcaptchaSecretKey?: string | null;

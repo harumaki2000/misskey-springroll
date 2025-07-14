@@ -192,6 +192,16 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
+	public requireApplicationForSignup: boolean;
+
+	@Column('simple-array', {
+		default: '',
+	})
+	public preservedUsernames: string[];
+
+	@Column('boolean', {
+		default: false,
+	})
 	public enableHcaptcha: boolean;
 
 	@Column('varchar', {

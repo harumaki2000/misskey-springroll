@@ -73,6 +73,7 @@ import {
 	MiUserListMembership,
 	MiUserMemo,
 	MiUserNotePining,
+	MiUserApplication,
 	MiUserPending,
 	MiUserProfile,
 	MiUserPublickey,
@@ -174,6 +175,12 @@ const $userKeypairsRepository: Provider = {
 const $userPendingsRepository: Provider = {
 	provide: DI.userPendingsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiUserPending).extend(miRepository as MiRepository<MiUserPending>),
+	inject: [DI.db],
+};
+
+const $userApplicationsRepository: Provider = {
+	provide: DI.userApplicationsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiUserApplication).extend(miRepository as MiRepository<MiUserApplication>),
 	inject: [DI.db],
 };
 
@@ -555,6 +562,7 @@ const $reversiGamesRepository: Provider = {
 		$userProfilesRepository,
 		$userKeypairsRepository,
 		$userPendingsRepository,
+		$userApplicationsRepository,
 		$userSecurityKeysRepository,
 		$userPublickeysRepository,
 		$userListsRepository,
@@ -632,6 +640,7 @@ const $reversiGamesRepository: Provider = {
 		$userProfilesRepository,
 		$userKeypairsRepository,
 		$userPendingsRepository,
+		$userApplicationsRepository,
 		$userSecurityKeysRepository,
 		$userPublickeysRepository,
 		$userListsRepository,

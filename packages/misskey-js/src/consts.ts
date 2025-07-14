@@ -167,6 +167,8 @@ export const moderationLogTypes = [
 	'deleteFlash',
 	'deleteGalleryPost',
 	'deleteChatRoom',
+	'approveUserApplication',
+	'rejectUserApplication',
 ] as const;
 
 export const queueTypes = [

@@ -29,6 +29,12 @@ import type {
 	AdminAnnouncementsListRequest,
 	AdminAnnouncementsListResponse,
 	AdminAnnouncementsUpdateRequest,
+	AdminApplicationsApproveRequest,
+	AdminApplicationsApproveResponse,
+	AdminApplicationsListRequest,
+	AdminApplicationsListResponse,
+	AdminApplicationsRejectRequest,
+	AdminApplicationsRejectResponse,
 	AdminAvatarDecorationsCreateRequest,
 	AdminAvatarDecorationsCreateResponse,
 	AdminAvatarDecorationsDeleteRequest,
@@ -670,6 +676,9 @@ export type Endpoints = {
 	'admin/announcements/delete': { req: AdminAnnouncementsDeleteRequest; res: EmptyResponse };
 	'admin/announcements/list': { req: AdminAnnouncementsListRequest; res: AdminAnnouncementsListResponse };
 	'admin/announcements/update': { req: AdminAnnouncementsUpdateRequest; res: EmptyResponse };
+	'admin/applications/approve': { req: AdminApplicationsApproveRequest; res: AdminApplicationsApproveResponse };
+	'admin/applications/list': { req: AdminApplicationsListRequest; res: AdminApplicationsListResponse };
+	'admin/applications/reject': { req: AdminApplicationsRejectRequest; res: AdminApplicationsRejectResponse };
 	'admin/avatar-decorations/create': { req: AdminAvatarDecorationsCreateRequest; res: AdminAvatarDecorationsCreateResponse };
 	'admin/avatar-decorations/delete': { req: AdminAvatarDecorationsDeleteRequest; res: EmptyResponse };
 	'admin/avatar-decorations/list': { req: AdminAvatarDecorationsListRequest; res: AdminAvatarDecorationsListResponse };
