@@ -127,12 +127,15 @@ export class SignupApiService {
 		const passwordHash = await bcrypt.hash(password, salt);
 
 		if (this.meta.requireApplicationForSignup) {
+			if (!reason || reason.trim() === '') {
+				throw new FastifyReplyError(400, 'REASON_REQUIRED');
+			}
 			await this.userApplicationsRepository.insertOne({
 				id: this.idService.gen(),
 				username,
 				email: emailAddress!,
 				passwordHash,
-				reason: reason ?? '',
+				reason: reason,
 			});
 
 			const subject = `[${this.meta.name}] 登録申請を受け付けました`;

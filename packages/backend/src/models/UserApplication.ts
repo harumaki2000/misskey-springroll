@@ -32,7 +32,7 @@ export class MiUserApplication {
 	public passwordHash: string;
 
 	@Column('text', {
-		nullable: true,
+		nullable: false,
 	})
 	public reason: string;
 
