@@ -93,7 +93,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.passwordNotMatched }}</span>
 					</template>
 				</MkInput>
-				<MkTextarea v-if="instance.requireApplicationForSignup" v-model="reason" :placeholder="i18n.ts.reason"/>
+				<MkTextarea v-if="instance.requireApplicationForSignup" v-model="reason" :placeholder="i18n.ts.reason" required/>
 				<MkCaptcha v-if="instance.enableHcaptcha" ref="hcaptcha" v-model="hCaptchaResponse" :class="$style.captcha"
 					provider="hcaptcha" :sitekey="instance.hcaptchaSiteKey" />
 				<MkCaptcha v-if="instance.enableMcaptcha" ref="mcaptcha" v-model="mCaptchaResponse" :class="$style.captcha"
@@ -187,6 +187,7 @@ const shouldDisableSubmitting = computed((): boolean => {
 		(instance.enableTurnstile && !turnstileResponse.value) ||
 		(instance.enableTestcaptcha && !testcaptchaResponse.value) ||
 		((instance.emailRequiredForSignup || instance.requireApplicationForSignup) && emailState.value !== 'ok') ||
+		(instance.requireApplicationForSignup && reason.value.trim() === '') ||
 		(usernameState.value !== 'ok') ||
 		(passwordRetypeState.value !== 'match');
 });
