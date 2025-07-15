@@ -1,9 +1,23 @@
+## v1.6.3
+
+### Client
+- Enhance: 申請承認制をオンにした際、申請理由を必須項目に
+- 申請承認制の説明文を変更
+
+### Server
+- Enhance: 申請承認制をオンにした際、申請理由を必須項目に
+
+[enhance(locales): 申請承認制の説明文を変更](https://github.com/harumaki2000/misskey-springroll/commit/8e0ff403c405817be66ba8cb8b2baaf419557ab0)
+[enhance(backend): 申請承認制をオンにした際、申請理由を必須項目に](https://github.com/harumaki2000/misskey-springroll/commit/0d8b78f5d1d3f08f2aa9ce3a6c281d3df0564db6)
+[enhance(frontend): 申請承認制をオンにした際、申請理由を必須項目に](https://github.com/harumaki2000/misskey-springroll/commit/efd65115583c30c370d41208ac7e543436d07387)
+
+
 ## v1.6.2
 
 ### Server
 - Fix: 申請の承認時に、新しく作成されたユーザーアカウントに申請時のメールアドレスを書き込む処理が抜けていたため修正
 
-https://github.com/harumaki2000/misskey-springroll/commit/e1335294cbbfbd3e0a5e3eff0244f3463c8f721b
+[fix(backend): 承認済みユーザーのメールアドレスが設定されない問題を修正](https://github.com/harumaki2000/misskey-springroll/commit/e1335294cbbfbd3e0a5e3eff0244f3463c8f721b)
 
 
 ## v1.6.1
@@ -17,8 +31,8 @@ https://github.com/harumaki2000/misskey-springroll/commit/e1335294cbbfbd3e0a5e3e
 ### Server
 - Feat: 申請承認制機能のバックエンドを実装
 
-https://github.com/harumaki2000/misskey-springroll/commit/1296f3430f59f5ae7723ca664838e72f02d10bd0
-https://github.com/harumaki2000/misskey-springroll/commit/6922c6fcad029f6a688198d6f0759444db16a42e
+[feat(backend): 申請承認機能のバックエンドを実装](https://github.com/harumaki2000/misskey-springroll/commit/1296f3430f59f5ae7723ca664838e72f02d10bd0)
+[feat(frontend): 申請承認機能のUIを実装](https://github.com/harumaki2000/misskey-springroll/commit/6922c6fcad029f6a688198d6f0759444db16a42e)
 
 ## v1.6.0
 
