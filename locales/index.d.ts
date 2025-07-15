@@ -1263,7 +1263,7 @@ export interface Locale extends ILocale {
      */
     "requireApplicationForSignupDescription": string;
     /**
-     * この設定は「登録を締め切る」がOFFの場合にのみ機能します。
+     * この設定は「アカウントの作成をオープンにする」がONの場合にのみ機能します。
      */
     "requireApplicationForSignupWarning": string;
     /**
