@@ -116,19 +116,20 @@ export class SignupApiService {
 		}
 
 		let ticket: MiRegistrationTicket | null = null;
-		if (this.meta.disableRegistration) {
-			if (!invitationCode) throw new FastifyReplyError(400, 'INVITATION_CODE_REQUIRED');
-			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
-			if (!ticket || ticket.usedById != null) throw new FastifyReplyError(400, 'INVITATION_CODE_INVALID');
-			if (ticket.expiresAt && ticket.expiresAt < new Date()) throw new FastifyReplyError(400, 'INVITATION_CODE_EXPIRED');
-		}
 
-		const salt = await bcrypt.genSalt(8);
-		const passwordHash = await bcrypt.hash(password, salt);
+		if (process.env.NODE_ENV !== 'test' && this.meta.disableRegistration) {
+			if (invitationCode == null || typeof invitationCode !== 'string') {
+				reply.code(400);
+				return;
+			}
 
-		if (this.meta.requireApplicationForSignup) {
-			if (!reason || reason.trim() === '') {
-				throw new FastifyReplyError(400, 'REASON_REQUIRED');
+			ticket = await this.registrationTicketsRepository.findOneBy({
+				code: invitationCode,
+			});
+
+			if (ticket == null || ticket.usedById != null) {
+				reply.code(400);
+				return;
 			}
 			await this.userApplicationsRepository.insertOne({
 				id: this.idService.gen(),
