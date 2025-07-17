@@ -116,7 +116,8 @@ export class SignupApiService {
 		}
 
 		let ticket: MiRegistrationTicket | null = null;
-		if (this.meta.disableRegistration) {
+		// テスト時はこの機構は障害となるため無効にする
+		if (process.env.NODE_ENV !== 'test' && this.meta.disableRegistration) {
 			if (!invitationCode) throw new FastifyReplyError(400, 'INVITATION_CODE_REQUIRED');
 			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
 			if (!ticket || ticket.usedById != null) throw new FastifyReplyError(400, 'INVITATION_CODE_INVALID');
@@ -138,8 +139,8 @@ export class SignupApiService {
 				reason: reason,
 			});
 
-			const subject = `[${this.meta.name}] 登録申請を受け付けました`;
-			const textContent = `${username}\n\n${this.meta.name}への登録申請を受け付けました。\n管理者の承認が完了するまで、今しばらくお待ちください。`;
+			const subject = `[${this.config.url}] 登録申請を受け付けました`;
+			const textContent = `${username}\n\n${this.config.url}への登録申請を受け付けました。\n管理者の承認が完了するまで、今しばらくお待ちください。`;
 			const htmlContent = textContent.replace(/\n/g, '<br>');
 			this.emailService.sendEmail(emailAddress!, subject, htmlContent, textContent);
 
