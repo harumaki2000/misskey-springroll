@@ -1,3 +1,11 @@
+## v1.6.4
+
+### Server
+- Fix: 登録申請時のメールの文章を修正
+
+[fix(backend): 登録申請時のメールの文章を修正](https://github.com/harumaki2000/misskey-springroll/commit/40a397ad8f2707b76188ac4cd3d0d7da1166edaa)
+
+
 ## v1.6.3
 
 ### Client
