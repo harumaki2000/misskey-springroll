@@ -140,7 +140,7 @@ export class SignupApiService {
 			});
 
 			const subject = `[${this.config.url}] 登録申請を受け付けました`;
-			const textContent = `${username}\n\n${this.config.url}への登録申請を受け付けました。\n管理者の承認が完了するまで、今しばらくお待ちください。`;
+			const textContent = `${username}\n\n[${this.config.url}] への登録申請を受け付けました。\n管理者の承認が完了するまで、今しばらくお待ちください。`;
 			const htmlContent = textContent.replace(/\n/g, '<br>');
 			this.emailService.sendEmail(emailAddress!, subject, htmlContent, textContent);
 
