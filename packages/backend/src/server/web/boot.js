@@ -239,25 +239,38 @@ class Systemd {
 	}
 	//#endregion
 
-	//#region Theme
-	const theme = localStorage.getItem('theme');
-	if (theme) {
-		await systemd.startSync('Apply theme', () => {
-			for (const [k, v] of Object.entries(JSON.parse(theme))) {
-				document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
+	let isSafeMode = (localStorage.getItem('isSafeMode') === 'true');
 
-				// HTMLの theme-color 適用
-				if (k === 'htmlThemeColor') {
-					for (const tag of document.head.children) {
-						if (tag.tagName === 'META' && tag.getAttribute('name') === 'theme-color') {
-							tag.setAttribute('content', v);
-							break;
+	if (!isSafeMode) {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		if (urlParams.has('safemode') && urlParams.get('safemode') === 'true') {
+			localStorage.setItem('isSafeMode', 'true');
+			isSafeMode = true;
+		}
+	}
+
+	if (!isSafeMode) {
+		const theme = localStorage.getItem('theme');
+		if (theme) {
+			await systemd.startSync('Apply theme', () => {
+				for (const [k, v] of Object.entries(JSON.parse(theme))) {
+					document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
+
+					// HTMLの theme-color 適用
+					if (k === 'htmlThemeColor') {
+						for (const tag of document.head.children) {
+							if (tag.tagName === 'META' && tag.getAttribute('name') === 'theme-color') {
+								tag.setAttribute('content', v);
+								break;
+							}
 						}
 					}
 				}
-			}
-		});
+			});
+		}
 	}
+
 	const colorScheme = localStorage.getItem('colorScheme');
 	if (colorScheme) {
 		document.documentElement.style.setProperty('color-scheme', colorScheme);
@@ -274,13 +287,15 @@ class Systemd {
 		document.documentElement.classList.add('useSystemFont');
 	}
 
-	const customCss = localStorage.getItem('customCss');
-	if (customCss && customCss.length > 0) {
-		await systemd.startSync('Apply custom CSS', () => {
-			const style = document.createElement('style');
-			style.innerHTML = customCss;
-			document.head.appendChild(style);
-		});
+	if (!isSafeMode) {
+		const customCss = localStorage.getItem('customCss');
+		if (customCss && customCss.length > 0) {
+			await systemd.startSync('Apply custom CSS', () => {
+				const style = document.createElement('style');
+				style.innerHTML = customCss;
+				document.head.appendChild(style);
+			});
+		}
 	}
 
 	async function addStyle(styleText) {
