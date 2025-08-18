@@ -22,8 +22,8 @@
 - Enhance: ユーザー検索をロールポリシーで制限できるように
 
 ### Client
-- Feat: AiScriptが1.0に更新されました
-	- プラグインは1.0に対応したものが必要です
+- Feat: AiScriptが1.1.0に更新されました
+	- プラグインは1.xに対応したものが必要です
 	- Playはそのまま動作しますが、新規に作られるプリセットは1.0になります
 	- 以前のバージョンから無効化されていた note_view_interruptor が有効になりました
 - Feat: セーフモード
@@ -33,11 +33,13 @@
 		- URLに`?safemode=true`を付ける
 		- PWAのショートカットで Safemode を選択して起動する
 - Feat: ページのタブバーを下部に表示できるように
+- Enhance: 「自動でもっと見る」オプションが有効になり、安定性が向上しました
 - Enhance: コントロールパネルを検索できるように
 - Enhance: トルコ語 (tr-TR) に対応
 - Enhance: 不必要な翻訳データを読み込まなくなり、パフォーマンスが向上しました
 - Enhance: 画像エフェクトのパラメータ名の多言語対応
 - Enhance: 依存ソフトウェアの更新
+- Enhance: ノートを非表示にする相対期間を1ヶ月単位で自由に指定できるように
 - Fix: 投稿フォームでファイルのアップロードが中止または失敗した際のハンドリングを修正
 - Fix: 一部の設定検索結果が存在しないパスになる問題を修正  
   (Cherry-picked from https://activitypub.software/TransFem-org/Sharkey/-/merge_requests/1171)
