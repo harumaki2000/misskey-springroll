@@ -5582,6 +5582,10 @@ export interface Locale extends ILocale {
      */
     "themeIsDefaultBecauseSafeMode": string;
     /**
+     * ベータ版の検証にご協力いただきありがとうございます！
+     */
+    "thankYouForTestingBeta": string;
+    /**
      * ノートの自動削除
      */
     "autoDeleteNote": string;
@@ -6718,6 +6722,18 @@ export interface Locale extends ILocale {
          * 現在の一部の設定はリセットされます。
          */
         "restartServerSetupWizardConfirm_text": string;
+        /**
+         * エントランスページのスタイル
+         */
+        "entrancePageStyle": string;
+        /**
+         * タイムラインを表示する
+         */
+        "showTimelineForVisitor": string;
+        /**
+         * アクティビティを表示する
+         */
+        "showActivityiesForVisitor": string;
         "_userGeneratedContentsVisibilityForVisitor": {
             /**
              * 全て公開
