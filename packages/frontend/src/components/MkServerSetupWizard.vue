@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<MkSwitch v-if="q_federation === 'yes'" v-model="q_remoteContentsCleaning">
 				<template #label>{{ i18n.ts._serverSetupWizard.remoteContentsCleaning }}</template>
-				<template #caption>{{ i18n.ts._serverSetupWizard.remoteContentsCleaning_description }}</template>
+				<template #caption>{{ i18n.ts._serverSetupWizard.remoteContentsCleaning_description }} ({{ i18n.ts._serverSetupWizard.remoteContentsCleaning_description2 }})</template>
 			</MkSwitch>
 		</div>
 	</MkFolder>
@@ -130,6 +130,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div>
 				<div><b>RBT:</b></div>
 				<div>{{ serverSettings.enableReactionsBuffering ? i18n.ts.yes : i18n.ts.no }}</div>
+			</div>
+
+			<div>
+				<div><b>{{ i18n.ts._serverSettings.entrancePageStyle }}:</b></div>
+				<div>{{ serverSettings.clientOptions.entrancePageStyle }}</div>
 			</div>
 
 			<div>
@@ -233,6 +238,9 @@ const serverSettings = computed<Misskey.entities.AdminUpdateMetaRequest>(() => {
 		enableFanoutTimeline: true,
 		enableFanoutTimelineDbFallback: q_use.value === 'single',
 		enableReactionsBuffering,
+		clientOptions: {
+			entrancePageStyle: q_use.value === 'open' ? 'classic' : 'simple',
+		},
 	};
 });
 
