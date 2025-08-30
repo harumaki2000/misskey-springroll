@@ -148,7 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.reactionCount) }}</p>
 				</button>
-				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @mousedown="heartReact()">
+				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && $appearNote.myReaction == null" ref="reactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @click="heartReact()">
 					<i class="ti ti-star"></i>
 				</button>
 				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
@@ -559,6 +559,11 @@ function react(): void {
 }
 
 function heartReact():void {
+	if ($appearNote.myReaction != null) {
+		undoReact();
+		return;
+	}
+
 	sound.playMisskeySfx('reaction');
 	if (props.mock) {
 		return;
