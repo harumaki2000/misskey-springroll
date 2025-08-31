@@ -1,3 +1,10 @@
+## v1.6.5
+
+### Client
+- Fix: いいねボタンの挙動の修正
+
+[fix(frontend): いいねボタンを押した際、UI上の表示が消えるように](https://github.com/harumaki2000/misskey-springroll/commit/bd91f816ba0b3bb30682dc374d8c6ca512d4b1a9)
+
 ## v1.6.4
 
 ### Server
