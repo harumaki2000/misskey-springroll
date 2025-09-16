@@ -37,6 +37,8 @@ export const notificationTypes = [
 	'test',
 	'login',
 	'createToken',
+	'unfollow',
+	'blocked',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
