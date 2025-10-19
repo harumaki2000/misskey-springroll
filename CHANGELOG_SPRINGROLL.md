@@ -1,3 +1,17 @@
+## v1.6.7
+
+### Client
+- Enhance: 天気予報ウィジェットをlqvp/misskey-tempuraのコードに変更
+
+https://github.com/lqvp/misskey-tempura/blob/develop/packages/frontend/src/widgets/WidgetWeather.vue
+
+## v1.6.6
+
+### Server
+- Fix: notificationTypesの定義漏れを修正
+
+[fix(misskey-js): notificationTypesの定義漏れを修正](https://github.com/harumaki2000/misskey-springroll/commit/2f612798f2f6e4906d26942247c977e8cb90366d)
+
 ## v1.6.5
 
 ### Client
