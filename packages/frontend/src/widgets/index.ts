@@ -82,6 +82,4 @@ export const widgets = [
 	'todoList',
 	'timer',
 	'weather',
-
-	...federationWidgets,
 ];
