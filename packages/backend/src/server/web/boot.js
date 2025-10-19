@@ -117,17 +117,33 @@ class Systemd {
 			return func();
 		})());
 	}
+	skip(id, message) {
+		const spanStatus = document.createElement('span');
+		spanStatus.innerText = ' SKIP ';
+		spanStatus.className = 'tty-status-skip';
+		const spanMessage = document.createElement('span');
+		spanMessage.innerText = `Skipped ${id}${message ? `: ${message}` : ''}`;
+		const div = document.createElement('div');
+		div.className = 'tty-line';
+		div.innerHTML = '[';
+		div.appendChild(spanStatus);
+		div.innerHTML += '] ';
+		div.appendChild(spanMessage);
+		this.tty_dom.appendChild(div);
+}
 	emergency_mode(code, details) {
-		``;
 		const divPrev = document.createElement('div');
 		divPrev.className = 'tty-line';
-		divPrev.innerText = 'Critical error occurred [' + code + '] : ' + details.message ? details.message : details;
+		const detailMessage = (details && typeof details === 'object' && 'message' in details)
+			? details.message
+			: details;
+		divPrev.innerText = `Critical error occurred [${code}] : ${detailMessage}`;
 		this.tty_dom.appendChild(divPrev);
 		const div = document.createElement('div');
 		div.className = 'tty-line';
 		div.innerText = 'You are in emergency mode. Type Ctrl-Shift-I to view system logs. Clearing local storage by going to /flush and browser settings may help.';
 		this.tty_dom.appendChild(div);
-	}
+}
 }
 
 // ブロックの中に入れないと、定義した変数がブラウザのグローバルスコープに登録されてしまい邪魔なので
@@ -219,9 +235,12 @@ class Systemd {
 		}
 	}
 
-	if (!isSafeMode) {
+	if (isSafeMode) {
+		systemd.skip('Apply theme', 'Safe mode is enabled');
+		systemd.skip('Apply custom CSS', 'Safe mode is enabled');
+	} else {
 		const theme = localStorage.getItem('theme');
-		if (theme) {
+		if (theme && theme !== 'null') {
 			await systemd.startSync('Apply theme', () => {
 				for (const [k, v] of Object.entries(JSON.parse(theme))) {
 					document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
@@ -237,36 +256,51 @@ class Systemd {
 					}
 				}
 			});
+		} else {
+			systemd.skip('Apply theme', 'No stored theme found');
 		}
-	}
 
-	const colorScheme = localStorage.getItem('colorScheme');
-	if (colorScheme) {
-		document.documentElement.style.setProperty('color-scheme', colorScheme);
-	}
-	//#endregion
-
-	const fontSize = localStorage.getItem('fontSize');
-	if (fontSize) {
-		document.documentElement.classList.add('f-' + fontSize);
-	}
-
-	const useSystemFont = localStorage.getItem('useSystemFont');
-	if (useSystemFont) {
-		document.documentElement.classList.add('useSystemFont');
-	}
-
-	if (!isSafeMode) {
 		const customCss = localStorage.getItem('customCss');
-		if (customCss && customCss.length > 0) {
+		if (customCss && customCss !== 'null' && customCss.length > 0) {
 			await systemd.startSync('Apply custom CSS', () => {
 				const style = document.createElement('style');
 				style.innerHTML = customCss;
 				document.head.appendChild(style);
 			});
+		} else {
+			systemd.skip('Apply custom CSS', 'No custom CSS found');
 		}
 	}
 
+	const colorScheme = localStorage.getItem('colorScheme');
+	if (colorScheme && colorScheme !== 'null') {
+		await systemd.startSync('Apply color scheme', () => {
+			document.documentElement.style.setProperty('color-scheme', colorScheme);
+		});
+	} else {
+		systemd.skip('Apply color scheme', 'No color scheme preference stored');
+	}
+	//#endregion
+
+	const fontSize = localStorage.getItem('fontSize');
+	if (fontSize && fontSize !== 'null' && fontSize !== '') {
+		await systemd.startSync('Apply font size', () => {
+			document.documentElement.classList.add('f-' + fontSize);
+		});
+	} else {
+		systemd.skip('Apply font size', 'Using default font size');
+	}
+
+	const useSystemFont = localStorage.getItem('useSystemFont');
+	if (useSystemFont === 'true') {
+		await systemd.startSync('Apply system font preference', () => {
+			document.documentElement.classList.add('useSystemFont');
+		});
+	} else if (useSystemFont === 'false') {
+		systemd.skip('Apply system font preference', 'System font usage disabled');
+	} else {
+		systemd.skip('Apply system font preference', 'No system font preference stored');
+	}
 	async function addStyle(styleText) {
 		await systemd.startSync('Apply custom Style', () => {
 			let css = document.createElement('style');

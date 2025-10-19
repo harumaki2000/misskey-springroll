@@ -28,11 +28,15 @@ html {
 }
 
 #tty > .tty-line .tty-status-failed {
-	color: darkred;
+        color: darkred;
 }
 
 #tty > .tty-line .tty-status-running {
-	color: red;
+        color: red;
+}
+
+#tty > .tty-line .tty-status-skip {
+        color: goldenrod;
 }
 
 #splash {

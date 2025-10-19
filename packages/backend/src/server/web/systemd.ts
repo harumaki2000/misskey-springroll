@@ -3,43 +3,46 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-export class Systemd {
-	private tty_dom: HTMLDivElement;
-	constructor() {
-		this.tty_dom = document.querySelector('#tty') as HTMLDivElement;
+type SystemdState =
+| { state: 'running' }
+| { state: 'done' }
+| { state: 'failed'; message: string };
 
-		console.log('Systemd started');
+export class Systemd {
+	private readonly ttyDom: HTMLDivElement;
+
+	constructor(version: string, cmdline: string) {
+		const tty = document.querySelector<HTMLDivElement>('#tty');
+		if (tty == null) {
+			throw new Error('#tty element was not found');
+		}
+		this.ttyDom = tty;
+
+		const welcome = document.createElement('div');
+		welcome.className = 'tty-line';
+		welcome.innerText = `misskey-springroll ${version} running in Web mode. cmdline: ${cmdline}`;
+		this.ttyDom.appendChild(welcome);
 	}
 
-	async start<T>(id: string, promise: Promise<T>): Promise<T> {
-		let state: {
-            state: 'running'
-        } | {
-            state: 'done'
-        } | {
-            state: 'failed'
-            message: string
-        } = { state: 'running' };
-
-		let persistentDom : HTMLDivElement | null = null;
-
+	public async start<T>(id: string, promise: Promise<T>): Promise<T> {
+		let state: SystemdState = { state: 'running' };
+		let persistentDom: HTMLDivElement | null = null;
 		const started = Date.now();
 
 		const formatRunning = () => {
-			const shiftArray = <T>(arr: T[], n: number): T[] => {
+			const shiftArray = <U>(arr: U[], n: number): U[] => {
 				return arr.slice(n).concat(arr.slice(0, n));
 			};
 
-			const elapsed_secs = Math.floor((Date.now() - started) / 1000);
-			const stars = shiftArray(['*', '*', '*', ' ', ' ', ' '], elapsed_secs % 6);
+			const elapsedSecs = Math.floor((Date.now() - started) / 1000);
+			const stars = shiftArray([' ', '*', '*', '*', ' ', ' '], elapsedSecs % 6);
 
 			const spanStatus = document.createElement('span');
-
 			spanStatus.innerText = stars.join('');
 			spanStatus.className = 'tty-status-running';
 
 			const spanMessage = document.createElement('span');
-			spanMessage.innerText = `A start job is running for ${id} (${elapsed_secs}s / no limit)`;
+			spanMessage.innerText = `A start job is running for ${id} (${elapsedSecs}s / no limit)`;
 
 			const div = document.createElement('div');
 			div.className = 'tty-line';
@@ -52,14 +55,14 @@ export class Systemd {
 		};
 
 		const formatDone = () => {
-			const elapsed_secs = Math.floor((Date.now() - started) / 1000);
+			const elapsedSecs = (Date.now() - started) / 1000;
 
 			const spanStatus = document.createElement('span');
 			spanStatus.innerText = '  OK  ';
 			spanStatus.className = 'tty-status-ok';
 
 			const spanMessage = document.createElement('span');
-			spanMessage.innerText = `Finished ${id} in ${elapsed_secs}s`;
+			spanMessage.innerText = `Finished ${id} in ${elapsedSecs.toFixed(3)}s`;
 
 			const div = document.createElement('div');
 			div.className = 'tty-line';
@@ -72,14 +75,14 @@ export class Systemd {
 		};
 
 		const formatFailed = (message: string) => {
-			const elapsed_secs = Math.floor((Date.now() - started) / 1000);
+			const elapsedSecs = (Date.now() - started) / 1000;
 
 			const spanStatus = document.createElement('span');
 			spanStatus.innerText = 'FAILED';
 			spanStatus.className = 'tty-status-failed';
 
 			const spanMessage = document.createElement('span');
-			spanMessage.innerText = `Failed ${id} in ${elapsed_secs}s: ${message}`;
+			spanMessage.innerText = `Failed ${id} in ${elapsedSecs.toFixed(3)}s: ${message}`;
 
 			const div = document.createElement('div');
 			div.className = 'tty-line';
@@ -96,7 +99,7 @@ export class Systemd {
 				case 'running':
 					if (persistentDom === null) {
 						persistentDom = formatRunning();
-						this.tty_dom.appendChild(persistentDom);
+						this.ttyDom.appendChild(persistentDom);
 					} else {
 						persistentDom.innerHTML = formatRunning().innerHTML;
 					}
@@ -104,7 +107,7 @@ export class Systemd {
 				case 'done':
 					if (persistentDom === null) {
 						persistentDom = formatDone();
-						this.tty_dom.appendChild(persistentDom);
+						this.ttyDom.appendChild(persistentDom);
 					} else {
 						persistentDom.innerHTML = formatDone().innerHTML;
 					}
@@ -112,7 +115,7 @@ export class Systemd {
 				case 'failed':
 					if (persistentDom === null) {
 						persistentDom = formatFailed(state.message);
-						this.tty_dom.appendChild(persistentDom);
+						this.ttyDom.appendChild(persistentDom);
 					} else {
 						persistentDom.innerHTML = formatFailed(state.message).innerHTML;
 					}
@@ -127,29 +130,54 @@ export class Systemd {
 			const res = await promise;
 			state = { state: 'done' };
 			return res;
-		} catch (e) {
-			if (e instanceof Error) {
-				state = { state: 'failed', message: e.message };
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				state = { state: 'failed', message: error.message };
 			} else {
 				state = { state: 'failed', message: 'Unknown error' };
 			}
-			throw e;
+			throw error;
 		} finally {
 			clearInterval(interval);
 			render();
 		}
 	}
 
-	async startSync<T>(id: string, func: () => T): Promise<T> {
-		return this.start(id, (async () => {
-			return func();
-		})());
+	public async startSync<T>(id: string, func: () => T): Promise<T> {
+		return this.start(id, (async () => func())());
 	}
 
-	public emergency_mode() {
+	public skip(id: string, message?: string): void {
+		const spanStatus = document.createElement('span');
+		spanStatus.innerText = ' SKIP ';
+		spanStatus.className = 'tty-status-skip';
+
+		const spanMessage = document.createElement('span');
+		spanMessage.innerText = `Skipped ${id}${message ? `: ${message}` : ''}`;
+
 		const div = document.createElement('div');
 		div.className = 'tty-line';
-		div.innerText = 'You are in emergency mode. Type Ctrl-Shift-I to view logs.';
-		this.tty_dom.appendChild(div);
+		div.innerHTML = '[';
+		div.appendChild(spanStatus);
+		div.innerHTML += '] ';
+		div.appendChild(spanMessage);
+
+		this.ttyDom.appendChild(div);
+	}
+
+	public emergency_mode(code: string, details: unknown): void {
+		const divPrev = document.createElement('div');
+		divPrev.className = 'tty-line';
+		const detailMessage =
+typeof details === 'object' && details !== null && 'message' in details
+	? (details as { message: unknown }).message
+	: details;
+		divPrev.innerText = `Critical error occurred [${code}] : ${String(detailMessage)}`;
+		this.ttyDom.appendChild(divPrev);
+
+		const div = document.createElement('div');
+		div.className = 'tty-line';
+		div.innerText = 'You are in emergency mode. Type Ctrl-Shift-I to view logs. Clearing local storage by going to /flush and browser settings may help.';
+		this.ttyDom.appendChild(div);
 	}
 }
