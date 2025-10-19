@@ -599,7 +599,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		if (data.expiresAt) {
 			console.log('Adding auto delete job', note.id, data.expiresAt);
-			this.queueService.addAutoDeleteNoteJob(note.id, data.expiresAt);
+                        await this.queueService.addAutoDeleteNoteJob(note.id, data.expiresAt);
 		}
 
 		if (!silent) {

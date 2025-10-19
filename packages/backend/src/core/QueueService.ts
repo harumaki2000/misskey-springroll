@@ -182,34 +182,39 @@ export class QueueService {
 	}
 
 	@bindThis
-	private async processAutoDeleteNote(job: Bull.Job<{ noteId: MiNote['id'] }>): Promise<void> {
-		const noteId = job.data.noteId;
+        private async processAutoDeleteNote(job: Bull.Job<{ noteId: MiNote['id'] }>): Promise<void> {
+                const noteId = job.data.noteId;
 
-		try {
-			const note = await this.notesRepository.findOneOrFail({
-				where: { id: noteId },
-				relations: ['user'],
-			}) as MiNote;
+                try {
+                        const note = await this.notesRepository.findOne({
+                                where: { id: noteId },
+                                relations: ['user'],
+                        });
 
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const noteDeleteService = await this.getNoteDeleteService();
+                        if (!note) {
+                                this.logger.debug(`Skip auto deleting note ${noteId} because it no longer exists.`);
+                                return;
+                        }
 
-			await this.noteDeleteService.delete({
-				id: note.user!.id,
-				uri: note.user!.uri,
-				host: note.user!.host,
-				isBot: note.user!.isBot,
-			}, note);
-			this.logger.info(`Auto deleted note: ${noteId}`);
-		} catch (err) {
-			this.logger.error(`Error auto deleteing note ${noteId}:`, err);
-			throw err;
-		}
-	}
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const noteDeleteService = await this.getNoteDeleteService();
 
-	@bindThis
-	public async checkExpiredNotes(): Promise<void> {
-		this.logger.info('Starting to check expired notes');
+                        await this.noteDeleteService.delete({
+                                id: note.user!.id,
+                                uri: note.user!.uri,
+                                host: note.user!.host,
+                                isBot: note.user!.isBot,
+                        }, note);
+                        this.logger.info(`Auto deleted note: ${noteId}`);
+                } catch (err) {
+                        this.logger.error(`Error auto deleteing note ${noteId}:`, err);
+                        throw err;
+                }
+        }
+
+        @bindThis
+        public async checkExpiredNotes(): Promise<void> {
+                this.logger.info('Starting to check expired notes');
 		const now = new Date();
 
 		const expiredNotes = await this.notesRepository.find({
@@ -221,41 +226,79 @@ export class QueueService {
 
 		this.logger.info(`Found ${expiredNotes.length} expired notes to delete`);
 
-		for (const note of expiredNotes) {
-			await this.autoDeleteNoteQueue.add(note.id, {
-				noteId: note.id,
-			});
-		}
-		this.logger.info('Finished checking expired notes');
-	}
+                for (const note of expiredNotes) {
+                        await this.upsertAutoDeleteNoteJob(note.id);
+                }
+                this.logger.info('Finished checking expired notes');
+        }
 
-	@bindThis
-	public addAutoDeleteNoteJob(noteId: MiNote['id'], expiresAt: Date): void {
-		const maxExpiryDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
-		const safeExpiresAt = expiresAt > maxExpiryDate ? maxExpiryDate : expiresAt;
-		const delay = safeExpiresAt.getTime() - Date.now();
+        @bindThis
+        public async addAutoDeleteNoteJob(noteId: MiNote['id'], expiresAt: Date): Promise<void> {
+                const maxExpiryDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
+                const safeExpiresAt = expiresAt > maxExpiryDate ? maxExpiryDate : expiresAt;
+                const delay = safeExpiresAt.getTime() - Date.now();
 
-		if (delay <= 0) {
-			this.autoDeleteNoteQueue.add(noteId, {
-				noteId: noteId,
-			});
-			return;
-		}
+                if (delay <= 0) {
+                        await this.upsertAutoDeleteNoteJob(noteId);
+                        return;
+                }
 
-		this.autoDeleteNoteQueue.add(noteId, {
-			noteId: noteId,
-		}, {
-			delay,
-			removeOnComplete: {
-				age: 3600 * 24 * 7,
-				count: 30,
-			},
-			removeOnFail: {
-				age: 3600 * 24 * 7,
-				count: 100,
-			},
-		});
-	}
+                await this.upsertAutoDeleteNoteJob(noteId, delay);
+        }
+
+        @bindThis
+        private async upsertAutoDeleteNoteJob(noteId: MiNote['id'], delay?: number): Promise<void> {
+                const options: Bull.JobsOptions = {
+                        jobId: noteId,
+                        removeOnComplete: {
+                                age: 3600 * 24 * 7,
+                                count: 30,
+                        },
+                        removeOnFail: {
+                                age: 3600 * 24 * 7,
+                                count: 100,
+                        },
+                };
+
+                if (delay && delay > 0) {
+                        options.delay = delay;
+                }
+
+                try {
+                        await this.autoDeleteNoteQueue.add(noteId, {
+                                noteId,
+                        }, options);
+                } catch (err) {
+                        if (!this.isJobAlreadyExistsError(err)) {
+                                throw err;
+                        }
+
+                        const existingJob = await this.autoDeleteNoteQueue.getJob(noteId);
+                        if (existingJob) {
+                                const state = await existingJob.getState().catch(() => undefined);
+
+                                if (state === 'active') {
+                                        this.logger.debug(`Skip rescheduling auto delete job for note ${noteId} because it is currently active.`);
+                                        return;
+                                }
+
+                                try {
+                                        await existingJob.remove();
+                                } catch (removeErr) {
+                                        this.logger.warn(`Failed to remove existing auto delete job for note ${noteId}`, { err: removeErr });
+                                        return;
+                                }
+                        }
+
+                        await this.autoDeleteNoteQueue.add(noteId, {
+                                noteId,
+                        }, options);
+                }
+        }
+
+        private isJobAlreadyExistsError(error: unknown): error is Error {
+                return error instanceof Error && error.message.includes('already exists');
+        }
 
 	@bindThis
 	public deliver(user: ThinUser, content: IActivity | null, to: string | null, isSharedInbox: boolean) {
