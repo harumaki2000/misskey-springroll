@@ -138,7 +138,7 @@ class Systemd {
 	};
 	window.onunhandledrejection = (e) => {
 		console.error(e);
-		renderError('SOMETHING_HAPPENED_IN_PROMISE', e);
+		renderError('SOMETHING_HAPPENED_IN_PROMISE', e.reason || e);
 	};
 
 	const cmdline = new URLSearchParams(location.search).get('cmdline') || '';
