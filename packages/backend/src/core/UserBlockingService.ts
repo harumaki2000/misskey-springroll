@@ -21,6 +21,15 @@ import { bindThis } from '@/decorators.js';
 import { CacheService } from '@/core/CacheService.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { NotificationService } from './NotificationService.js';
+import { RoleService } from './RoleService.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { QueryFailedError } from 'typeorm';
+
+export class CannotBlockModeratorError extends IdentifiableError {
+	constructor() {
+		super('6d84537a-543f-4a71-9cfa-7da57de09088', 'Cannot block moderators.');
+	}
+}
 
 @Injectable()
 export class UserBlockingService implements OnModuleInit {
@@ -52,6 +61,7 @@ export class UserBlockingService implements OnModuleInit {
 		private apRendererService: ApRendererService,
 		private loggerService: LoggerService,
 		private notificationService: NotificationService,
+		private roleService: RoleService,
 	) {
 		this.logger = this.loggerService.getLogger('user-block');
 	}
@@ -62,6 +72,13 @@ export class UserBlockingService implements OnModuleInit {
 
 	@bindThis
 	public async block(blocker: MiUser, blockee: MiUser, silent = false) {
+		const isLocalBlocker = this.userEntityService.isLocalUser(blocker);
+		const isLocalBlockee = this.userEntityService.isLocalUser(blockee);
+
+		if (isLocalBlocker && isLocalBlockee && await this.roleService.isModerator(blockee)) {
+			this.logger.warn(`${blocker.id} attempted to block moderator ${blockee.id}`);
+			throw new CannotBlockModeratorError();
+		}
 		await Promise.all([
 			this.cancelRequest(blocker, blockee, silent),
 			this.cancelRequest(blockee, blocker, silent),
@@ -78,10 +95,24 @@ export class UserBlockingService implements OnModuleInit {
 			blockeeId: blockee.id,
 		} as MiBlocking;
 
-		await this.blockingsRepository.insert(blocking);
+		let created = false;
+		try {
+			await this.blockingsRepository.insert(blocking);
+			created = true;
+		} catch (err) {
+			if (err instanceof QueryFailedError && err.driverError?.code === '23505') {
+				this.logger.debug(`Block ${blocker.id} -> ${blockee.id} already exists.`);
+			} else {
+				throw err;
+			}
+		}
 
 		this.cacheService.userBlockingCache.refresh(blocker.id);
 		this.cacheService.userBlockedCache.refresh(blockee.id);
+
+		if (!created) {
+			return;
+		}
 
 		this.globalEventService.publishInternalEvent('blockingCreated', {
 			blockerId: blocker.id,

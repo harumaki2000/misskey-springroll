@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { UserFollowingService } from '@/core/UserFollowingService.js';
-import { UserBlockingService } from '@/core/UserBlockingService.js';
+import { CannotBlockModeratorError, UserBlockingService } from '@/core/UserBlockingService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 
@@ -61,8 +61,16 @@ export class RelationshipProcessorService {
 			this.usersRepository.findOneByOrFail({ id: job.data.from.id }),
 			this.usersRepository.findOneByOrFail({ id: job.data.to.id }),
 		]);
-		await this.userBlockingService.block(blockee, blocker, job.data.silent);
-		return 'ok';
+		try {
+			await this.userBlockingService.block(blockee, blocker, job.data.silent);
+			return 'ok';
+		} catch (err) {
+			if (err instanceof CannotBlockModeratorError) {
+				this.logger.warn(`${blocker.id} cannot be blocked because they are a moderator.`);
+				return 'skip: cannot block moderators';
+			}
+			throw err;
+		}
 	}
 
 	@bindThis
