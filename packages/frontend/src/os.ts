@@ -339,6 +339,7 @@ export function inputText(props: {
 	default: string;
 	minLength?: number;
 	maxLength?: number;
+	max?: string;
 }): Promise<{
 	canceled: true; result: undefined;
 } | {
@@ -346,7 +347,7 @@ export function inputText(props: {
 }>;
 // min lengthが指定されてたら result は null になり得ないことを保証する overload function
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url' | 'number';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number' | 'datetime-local';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -354,13 +355,14 @@ export function inputText(props: {
 	default?: string;
 	minLength: number;
 	maxLength?: number;
+	max?: string;
 }): Promise<{
 	canceled: true; result: undefined;
 } | {
 	canceled: false; result: string;
 }>;
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url' | 'number';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number' | 'datetime-local';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -368,13 +370,14 @@ export function inputText(props: {
 	default?: string | null;
 	minLength?: number;
 	maxLength?: number;
+	max?: string;
 }): Promise<{
 	canceled: true; result: undefined;
 } | {
 	canceled: false; result: string | null;
 }>;
 export function inputText(props: {
-	type?: 'text' | 'email' | 'password' | 'url' | 'number';
+	type?: 'text' | 'email' | 'password' | 'url' | 'number' | 'datetime-local';
 	title?: string;
 	text?: string;
 	placeholder?: string | null;
@@ -382,6 +385,7 @@ export function inputText(props: {
 	default?: string | null;
 	minLength?: number;
 	maxLength?: number;
+	max?: string;
 }): Promise<{
 	canceled: true; result: undefined;
 } | {
