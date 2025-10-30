@@ -1267,7 +1267,7 @@ export interface Locale extends ILocale {
      */
     "requireApplicationForSignupDescription": string;
     /**
-     * この設定は「アカウントの作成をオープンにする」がONの場合にのみ機能します。
+     * この設定は「アカウントの作成をオープンにする」「アカウント登録にメールアドレスを必須にする」がONの場合にのみ機能します。
      */
     "requireApplicationForSignupWarning": string;
     /**
