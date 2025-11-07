@@ -11,7 +11,7 @@ import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { ReactionService } from '@/core/ReactionService.js';
 import { RelayService } from '@/core/RelayService.js';
 import { NotePiningService } from '@/core/NotePiningService.js';
-import { CannotBlockModeratorError, UserBlockingService } from '@/core/UserBlockingService.js';
+import { UserBlockingService } from '@/core/UserBlockingService.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { concat, toArray, toSingle, unique } from '@/misc/prelude/array.js';
@@ -375,15 +375,8 @@ export class ApInboxService {
 			return 'skip: ブロックしようとしているユーザーはローカルユーザーではありません';
 		}
 
-		try {
-			await this.userBlockingService.block(await this.usersRepository.findOneByOrFail({ id: actor.id }), await this.usersRepository.findOneByOrFail({ id: blockee.id }));
-			return 'ok';
-		} catch (err) {
-			if (err instanceof CannotBlockModeratorError) {
-				return 'skip: cannot block moderators';
-			}
-			throw err;
-		}
+		await this.userBlockingService.block(await this.usersRepository.findOneByOrFail({ id: actor.id }), await this.usersRepository.findOneByOrFail({ id: blockee.id }));
+		return 'ok';
 	}
 
 	@bindThis
