@@ -4,26 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkContainer :showHeader="widgetProps.showHeader" class="mkw-Earthquake">
+<MkContainer :showHeader="widgetProps.showHeader">
 	<template #icon><i class="ti ti-building-lighthouse"></i></template>
 	<template #header>{{ i18n.ts._widgets.earthquake }}</template>
-	<template #func="{ buttonStyleClass }">
-		<button class="_button" :class="buttonStyleClass" @click="reconnectWebSocket">
-			<i class="ti ti-refresh"></i>
-		</button>
-	</template>
-	<div class="$style.root">
-		<MkLoading v-if="fetching"></MkLoading>
-		<div v-if="earthquakeData && earthquakeData.Title">
-			<p>{{ earthquakeData.Title }}</p>
-			<p>発生時刻: {{ earthquakeData.time_full }}</p>
-			<p>震源地: {{ earthquakeData.location }}</p>
-			<p>最大震度: {{ formatShindo(earthquakeData.shindo) }}</p>
-			<p>マグニチュード: {{ earthquakeData.magnitude }}</p>
-			<p>震源の深さ: {{ earthquakeData.depth }}</p>
-			<p>{{ earthquakeData.info }}</p>
+	<div :class="$style.content" :style="{ height: widgetProps.height + 'px'}">
+		<MkLoading v-if="fetching"/>
+		<div v-else-if="eqData" :class="$style.data">
+			<p>{{ eqData.Title }}</p>
+			<p>発生時刻: {{ eqData.time }}</p>
+			<p>震源地: {{ eqData.location }}</p>
+			<p>最大震度: {{ eqData.shindo }}</p>
+			<p>マグニチュード: {{ eqData.magnitude }}</p>
+			<p>震源の深さ: {{ eqData.depth }}</p>
+			<p>{{ eqData.Info }}</p>
 		</div>
-		<p v-else>現在、地震情報はありません。</p>
+		<div v-else :class="$style.empty">
+			<p>地震情報はありません。</p>
+		</div>
 	</div>
 </MkContainer>
 </template>
@@ -32,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
-import type { GetFormResultType } from '@/scripts/form.js';
+import type { FormWithDefault, GetFormResultType } from '@/utility/form';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
 
@@ -40,36 +37,39 @@ const name = 'earthquake';
 
 const widgetPropsDef = {
 	showHeader: {
-		type: 'boolean' as const,
+		type: 'boolean',
 		default: true,
 	},
 	height: {
-		type: 'number' as const,
+		type: 'number',
 		default: 100,
 	},
-};
+} satisfies FormWithDefault;
 
 type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
 
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
-const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
+const { widgetProps, configure } = useWidgetPropsManager(name,
+	widgetPropsDef,
+	props,
+	emit,
+);
 
-interface EarthquakeData {
+interface EqData {
 	Title: string;
-	time_full: string;
+	time: string;
 	location: string;
-	shindo: string;
 	magnitude: string;
+	shindo: string;
 	depth: string;
-	info: string;
+	Info: string;
 }
 
-const earthquakeData = ref<EarthquakeData | null >(null);
+const eqData = ref<EqData | null>(null);
 const fetching = ref(false);
 let ws: WebSocket | null = null;
-let reconnecting = ref(false);
 let clearTimer: number | null = null;
 
 const showLoadingTemporarily = () => {
@@ -79,104 +79,50 @@ const showLoadingTemporarily = () => {
 	}, 1000);
 };
 
-const formatShindo = (shindo: string): string => {
-	switch (shindo) {
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '7':
-			return `震度${shindo}`;
-		case '5-':
-			return '震度5弱';
-		case '5+':
-			return '震度5強';
-		case '6-':
-			return '震度6弱';
-		case '6+':
-			return '震度6強';
-		default:
-			return '震度不明';
-	}
-};
-
 const connectWebSocket = () => {
 	if (ws) {
 		ws.close();
 	}
 
-	// ws = new WebSocket('ws://localhost:8765'); // テスト用
 	ws = new WebSocket('wss://ws-api.wolfx.jp/jma_eqlist');
 
 	ws.onopen = () => {
-		console.log('WebSocket 接続確立');
 		showLoadingTemporarily();
 		ws?.send('query_jmaeqlist');
 	};
 
 	ws.onmessage = (event) => {
-		try {
-			const data = JSON.parse(event.data);
-			console.log('受信データ:', data);
+		const data = JSON.parse(event.data);
 
-			if (data.type === 'heartbeat') {
-				return;
+		if (data.type === 'heartbeat') {
+			return;
+		}
+
+		if (data.type === 'jma_eqlist' && data.No1) {
+			const latestEq = data.No1;
+			const newEqData: EqData = {
+				Title: latestEq.Title,
+				time: latestEq.time,
+				location: latestEq.location,
+				magnitude: latestEq.magnitude,
+				shindo: latestEq.shindo,
+				depth: latestEq.depth,
+				Info: latestEq.Info,
+			};
+
+			eqData.value = newEqData;
+
+			showLoadingTemporarily();
+
+			if (clearTimer !== null) {
+				window.clearTimeout(clearTimer);
 			}
-
-			if (data.type === 'jma_eqlist' && data.No1) {
-				const latestEarthquake = data.No1;
-
-				const newEarthquakeData: EarthquakeData = {
-					Title: latestEarthquake.Title,
-					time_full: latestEarthquake.time_full,
-					location: latestEarthquake.location,
-					shindo: latestEarthquake.shindo,
-					magnitude: latestEarthquake.magnitude,
-					depth: latestEarthquake.depth,
-					info: latestEarthquake.info,
-				};
-
-				earthquakeData.value = newEarthquakeData;
-				showLoadingTemporarily();
-
-				if (clearTimer !== null) {
-					window.clearTimeout(clearTimer);
-				}
-
-				clearTimer = window.setTimeout(() => {
-					earthquakeData.value = null;
-					clearTimer = null;
-				}, 5 * 60 * 1000);
-			} else {
-				console.warn('データが空です:', data);
-				earthquakeData.value = null;
-				showLoadingTemporarily();
-			}
-		} catch (error) {
-			console.error('WebSocket データ解析エラー:', error);
+			clearTimer = window.setTimeout(() => {
+				eqData.value = null;
+				clearTimer = null;
+			}, 5 * 60 * 1000);
 		}
 	};
-
-	ws.onerror = (error) => {
-		console.error('WebSocket エラー:', error);
-		reconnecting.value = true;
-	};
-
-	ws.onclose = () => {
-		console.log('WebSocket 切断');
-		if (!reconnecting.value) {
-			window.setTimeout(connectWebSocket, 5000);
-		}
-	};
-};
-
-const reconnectWebSocket = () => {
-	if (!reconnecting.value) {
-		console.log('WebSocket 再接続');
-		reconnecting.value = true;
-		showLoadingTemporarily();
-		connectWebSocket();
-	}
 };
 
 onMounted(() => {
@@ -197,7 +143,49 @@ defineExpose<WidgetComponentExpose>({
 </script>
 
 <style lang="scss" module>
-.root {
-  padding: 16px;
+.content {
+	overflow-y: auto;
+	padding: 16px;
+	color: var(--MI_THEME-fg);
+	font-size: 0.9em;
+}
+
+.data {
+	> * + * {
+		margin-top: 8px;
+	}
+}
+
+.empty {
+	text-align: center;
+	opacity: 0.7;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin: 0;
+}
+
+.data ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  border-top: solid 1px var(--divider);
+  border-bottom: solid 1px var(--divider);
+}
+
+.data li {
+  padding: 2px 0;
+  > strong {
+    color: var(--accent);
+    margin-right: 4px;
+  }
+}
+
+.info {
+  margin: 0;
+  font-size: 0.9em;
+  opacity: 0.8;
 }
 </style>
