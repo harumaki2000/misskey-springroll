@@ -299,6 +299,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</MkSelect>
 								</MkPreferenceContainer>
 							</SearchMarker>
+							<SearchMarker :keywords="['reaction', 'star', 'favorite', 'quick', 'ti-star']">
+								<MkPreferenceContainer k="noteStarReaction">
+									<div class="_gaps_s">
+										<div>
+											<SearchLabel>{{ i18n.ts.noteStarReaction }}</SearchLabel>
+										</div>
+										<div class="_buttons">
+											<MkButton inline @click="chooseNoteStarReaction">
+												<template #icon>
+													<MkReactionIcon :reaction="noteStarReactionPreview" noStyle/>
+												</template>
+												{{ noteStarReactionLabel }}
+											</MkButton>
+											<MkButton inline subtle @click="resetNoteStarReaction">
+												{{ i18n.ts.reset }}
+											</MkButton>
+										</div>
+										<SearchText>{{ i18n.ts.noteStarReactionDescription }}</SearchText>
+									</div>
+								</MkPreferenceContainer>
+							</SearchMarker>
 						</div>
 					</div>
 				</MkFolder>
@@ -823,6 +844,7 @@ import MkDisableSection from '@/components/MkDisableSection.vue';
 import FormLink from '@/components/form/link.vue';
 import MkLink from '@/components/MkLink.vue';
 import MkInfo from '@/components/MkInfo.vue';
+import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import { store } from '@/store.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
@@ -838,6 +860,8 @@ import { instance } from '@/instance.js';
 import { ensureSignin } from '@/i.js';
 import { genId } from '@/utility/id.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
+import { reactionPicker } from '@/utility/reaction-picker.js';
+import { DEFAULT_NOTE_STAR_REACTION } from '@/preferences/def.js';
 
 const $i = ensureSignin();
 
@@ -853,6 +877,7 @@ const serverDisconnectedBehavior = prefer.model('serverDisconnectedBehavior');
 const hemisphere = prefer.model('hemisphere');
 const showNoteActionsOnlyHover = prefer.model('showNoteActionsOnlyHover');
 const showClipButtonInNoteFooter = prefer.model('showClipButtonInNoteFooter');
+const noteStarReaction = prefer.model('noteStarReaction');
 const collapseRenotes = prefer.model('collapseRenotes');
 const advancedMfm = prefer.model('advancedMfm');
 const showReactionsCount = prefer.model('showReactionsCount');
@@ -903,6 +928,10 @@ const useNativeUiForVideoAudioPlayer = prefer.model('useNativeUiForVideoAudioPla
 const contextMenu = prefer.model('contextMenu');
 const menuStyle = prefer.model('menuStyle');
 const makeEveryTextElementsSelectable = prefer.model('makeEveryTextElementsSelectable');
+
+const noteStarReactionPreview = computed(() => noteStarReaction.value || DEFAULT_NOTE_STAR_REACTION);
+const noteStarReactionLabel = computed(() => noteStarReactionPreview.value.replace('@.', ''));
+const isNoteStarReactionDefault = computed(() => noteStarReaction.value === DEFAULT_NOTE_STAR_REACTION);
 
 const fontSize = ref(miLocalStorage.getItem('fontSize'));
 const useSystemFont = ref(miLocalStorage.getItem('useSystemFont') != null);
@@ -1025,6 +1054,19 @@ async function setPinnedList() {
 
 function removePinnedList() {
 	prefer.commit('pinnedUserLists', []);
+}
+
+function chooseNoteStarReaction(ev: MouseEvent) {
+	const target = (ev.currentTarget ?? ev.target) as HTMLElement | null;
+	reactionPicker.show(target, null, (reaction) => {
+		if (noteStarReaction.value === reaction) return;
+		noteStarReaction.value = reaction;
+	});
+}
+
+function resetNoteStarReaction() {
+	if (isNoteStarReactionDefault.value) return;
+	noteStarReaction.value = DEFAULT_NOTE_STAR_REACTION;
 }
 
 function enableAllDataSaver() {

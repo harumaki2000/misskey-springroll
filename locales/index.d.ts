@@ -4511,6 +4511,14 @@ export interface Locale extends ILocale {
      */
     "showClipButtonInNoteFooter": string;
     /**
+     * いいね！
+     */
+    "noteStarReaction": string;
+    /**
+     * いいねボタンで送信するリアクションを選択します。
+     */
+    "noteStarReactionDescription": string;
+    /**
      * リアクションの表示サイズ
      */
     "reactionsDisplaySize": string;
