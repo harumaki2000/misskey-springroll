@@ -9788,6 +9788,16 @@ export interface Locale extends ILocale {
          * 天気予報
          */
         "weather": string;
+        /**
+         * NowPlaying
+         */
+        "listenBrainz": string;
+        "_listenBrainz": {
+            /**
+             * ListenBrainzのユーザーIDを設定してください。
+             */
+            "userIdDescription": string;
+        };
     };
     "_cw": {
         /**

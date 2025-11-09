@@ -41,6 +41,7 @@ export default function(app: App) {
 	app.component('WidgetTodoList', defineAsyncComponent(() => import('./WidgetTodoList.vue')));
 	app.component('WidgetTimer', defineAsyncComponent(() => import('./WidgetTimer.vue')));
 	app.component('WidgetWeather', defineAsyncComponent(() => import('./WidgetWeather.vue')));
+	app.component('WidgetListenBrainz', defineAsyncComponent(() => import('./WidgetListenBrainz.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
@@ -82,4 +83,5 @@ export const widgets = [
 	'todoList',
 	'timer',
 	'weather',
+	'listenBrainz',
 ];
