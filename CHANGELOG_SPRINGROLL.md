@@ -1,3 +1,8 @@
+## v1.7.0
+
+### Client
+- Feat: NowPlayingウィジェットを追加
+
 ## v1.6.9
 
 ### Client

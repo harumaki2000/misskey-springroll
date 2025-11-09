@@ -2571,6 +2571,9 @@ _widgets:
   todoList: "ToDoリスト"
   timer: "タイマー"
   weather: "天気予報"
+  listenBrainz: "NowPlaying"
+  _listenBrainz:
+    userIdDescription: "ListenBrainzのユーザーIDを設定してください。"
 
 _cw:
   hide: "隠す"
