@@ -244,7 +244,6 @@ import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
 import { globalEvents } from '@/events.js';
-import tooltip from '@/directives/tooltip';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
