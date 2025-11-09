@@ -7,16 +7,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkContainer :showHeader="widgetProps.showHeader">
 	<template #icon><i class="ti ti-building-lighthouse"></i></template>
 	<template #header>{{ i18n.ts._widgets.earthquake }}</template>
-	<div :class="$style.content" :style="{ height: widgetProps.height + 'px'}">
+	<template #func="{ buttonStyleClass }">
+		<button class="_button" :class="buttonStyleClass" @click="reconnectWebSocket"><i class="ti ti-refresh"></i></button>
+	</template>
+	<div :class="$style.content">
 		<MkLoading v-if="fetching"/>
 		<div v-else-if="eqData" :class="$style.data">
 			<p>{{ eqData.Title }}</p>
 			<p>発生時刻: {{ eqData.time }}</p>
 			<p>震源地: {{ eqData.location }}</p>
-			<p>最大震度: {{ eqData.shindo }}</p>
+			<p>最大震度: {{ formatShindo(eqData.shindo) }}</p>
 			<p>マグニチュード: {{ eqData.magnitude }}</p>
 			<p>震源の深さ: {{ eqData.depth }}</p>
-			<p>{{ eqData.Info }}</p>
+			<p>{{ eqData.info }}</p>
 		</div>
 		<div v-else :class="$style.empty">
 			<p>地震情報はありません。</p>
@@ -64,12 +67,13 @@ interface EqData {
 	magnitude: string;
 	shindo: string;
 	depth: string;
-	Info: string;
+	info: string;
 }
 
 const eqData = ref<EqData | null>(null);
 const fetching = ref(false);
 let ws: WebSocket | null = null;
+let reconnecting = ref(false);
 let clearTimer: number | null = null;
 
 const showLoadingTemporarily = () => {
@@ -77,6 +81,27 @@ const showLoadingTemporarily = () => {
 	window.setTimeout(() => {
 		fetching.value = false;
 	}, 1000);
+};
+
+const formatShindo = (shindo: string): string => {
+	switch (shindo) {
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '7':
+			return `${shindo}`;
+		case '5-':
+			return '5弱';
+		case '5+':
+			return '5強';
+		case '6-':
+			return '6弱';
+		case '6+':
+			return '6強';
+		default:
+			return '不明';
+	}
 };
 
 const connectWebSocket = () => {
@@ -89,6 +114,7 @@ const connectWebSocket = () => {
 	ws.onopen = () => {
 		showLoadingTemporarily();
 		ws?.send('query_jmaeqlist');
+		reconnecting.value = false;
 	};
 
 	ws.onmessage = (event) => {
@@ -107,7 +133,7 @@ const connectWebSocket = () => {
 				magnitude: latestEq.magnitude,
 				shindo: latestEq.shindo,
 				depth: latestEq.depth,
-				Info: latestEq.Info,
+				info: latestEq.Info,
 			};
 
 			eqData.value = newEqData;
@@ -123,6 +149,20 @@ const connectWebSocket = () => {
 			}, 5 * 60 * 1000);
 		}
 	};
+
+	ws.onclose = () => {
+		if (!reconnecting.value) {
+			window.setTimeout(connectWebSocket, 5000);
+		}
+	};
+};
+
+const reconnectWebSocket = () => {
+	if (!reconnecting.value) {
+		reconnecting.value = true;
+		showLoadingTemporarily();
+		connectWebSocket();
+	}
 };
 
 onMounted(() => {
@@ -144,7 +184,6 @@ defineExpose<WidgetComponentExpose>({
 
 <style lang="scss" module>
 .content {
-	overflow-y: auto;
 	padding: 16px;
 	color: var(--MI_THEME-fg);
 	font-size: 0.9em;
