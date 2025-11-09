@@ -250,6 +250,7 @@ import MkUsersTooltip from '@/components/MkUsersTooltip.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 import { pleaseLogin } from '@/utility/please-login.js';
+import { DEFAULT_NOTE_STAR_REACTION } from '@/preferences/def.js';
 import { checkWordMute } from '@/utility/check-word-mute.js';
 import { userPage } from '@/filters/user.js';
 import { notePage } from '@/filters/note.js';
@@ -522,13 +523,14 @@ function react(): void {
 
 function heartReact():void {
 	sound.playMisskeySfx('reaction');
+	const reaction = prefer.s.noteStarReaction ?? DEFAULT_NOTE_STAR_REACTION;
 	misskeyApi('notes/reactions/create', {
 		noteId: appearNote.id,
-		reaction: '🩵',
+		reaction,
 	}).then(() => {
 		noteEvents.emit(`reacted:${appearNote.id}`, {
 			userId: $i!.id,
-			reaction: '🩵',
+			reaction,
 		});
 	});
 }

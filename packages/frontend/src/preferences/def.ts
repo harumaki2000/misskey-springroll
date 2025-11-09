@@ -16,6 +16,8 @@ import { genId } from '@/utility/id.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 import { deepEqual } from '@/utility/deep-equal.js';
 
+export const DEFAULT_NOTE_STAR_REACTION = '🩵';
+
 /** サウンド設定 */
 export type SoundStore = {
 	type: Exclude<SoundType, '_driveFile_'>;
@@ -299,6 +301,10 @@ export const PREF_DEF = definePreferences({
 	},
 	showClipButtonInNoteFooter: {
 		default: false,
+	},
+	noteStarReaction: {
+		accountDependent: false,
+		default: DEFAULT_NOTE_STAR_REACTION,
 	},
 	reactionsDisplaySize: {
 		default: 'medium' as 'small' | 'medium' | 'large',
