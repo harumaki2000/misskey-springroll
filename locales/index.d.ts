@@ -4763,7 +4763,7 @@ export interface Locale extends ILocale {
      */
     "enableIdenticonGeneration": string;
     /**
-     * リモートユーザーのロールバッジを表示する
+     * リモートユーザーに付与したロールバッジを表示する
      */
     "showRoleBadgesOfRemoteUsers": string;
     /**
@@ -12505,6 +12505,10 @@ export interface Locale extends ILocale {
          * 敷き詰める
          */
         "repeat": string;
+        /**
+         * 回転時はみ出ないように調整する
+         */
+        "preserveBoundingRect": string;
         /**
          * 不透明度
          */
