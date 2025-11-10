@@ -2576,6 +2576,7 @@ _widgets:
   listenBrainz: "NowPlaying"
   _listenBrainz:
     userIdDescription: "ListenBrainzのユーザーIDを設定してください。"
+  weatherWeek: "週間天気予報"
 
 _cw:
   hide: "隠す"
