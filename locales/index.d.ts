@@ -9806,6 +9806,10 @@ export interface Locale extends ILocale {
              */
             "userIdDescription": string;
         };
+        /**
+         * 週間天気予報
+         */
+        "weatherWeek": string;
     };
     "_cw": {
         /**
