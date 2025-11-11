@@ -1,3 +1,8 @@
+## v1.7.4
+
+### Client
+- Enhance: 週間天気予報ウィジェットのAPIをOpen-Meteoに変更
+
 ## v1.7.3
 
 ### Client
