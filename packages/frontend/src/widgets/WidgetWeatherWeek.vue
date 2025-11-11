@@ -17,9 +17,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else class="weather-container">
 			<div class="city-name">{{ cityLabel }}</div>
 			<div class="weather-days">
-				<div v-for="day in forecasts" :key="day.dt" class="weather-day">
-					<div class="weather-date">{{ formatDate(day.dt) }}</div>
-					<img :src="getIconUrl(day.weather[0].icon)" :alt="day.weather[0].description" class="weather-icon">
+				<div v-for="day in forecasts" :key="day.date" class="weather-day">
+					<div class="weather-date">{{ formatDate(day.date) }}</div>
+					<img :src="getWeatherInfo(day.weather_code).iconPath" :alt="getWeatherInfo(day.weather_code).description" class="weather-icon">
+					<div class="weather-description">{{ getWeatherInfo(day.weather_code).description }}</div>
 					<div class="weather-temp">
 						<span class="temp-max">{{ getMaxTemp(day) }}℃</span>
 						<span class="temp-separator"> / </span>
@@ -27,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 			</div>
-			<div class="from">from OpenWeatherMap</div>
+			<div class="from">from Open-Meteo</div>
 		</div>
 	</div>
 </MkContainer>
@@ -42,9 +43,8 @@ import MkContainer from '@/components/MkContainer.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 
-const GEO_ENDPOINT = 'https://api.openweathermap.org/geo/1.0/direct';
-const WEATHER_ENDPOINT = 'https://api.openweathermap.org/data/3.0/onecall';
-const EXCLUDED_PARTS = 'current,minutely,hourly,alerts';
+const GEO_ENDPOINT = 'https://geocoding-api.open-meteo.com/v1/search';
+const WEATHER_ENDPOINT = 'https://api.open-meteo.com/v1/jma';
 
 const name = 'weatherWeek';
 
@@ -53,22 +53,9 @@ const widgetPropsDef = {
 		type: 'boolean' as const,
 		default: true,
 	},
-	appid: {
-		type: 'string' as const,
-		default: '',
-		description: 'OpenWeatherMap One Call API 3.0(https://openweathermap.org/api)APIキーを入力してください。',
-	},
 	city: {
 		type: 'string' as const,
 		default: 'Tokyo',
-	},
-	units: {
-		type: 'string' as const,
-		default: 'metric',
-	},
-	lang: {
-		type: 'string' as const,
-		default: 'ja',
 	},
 	refreshIntervalSec: {
 		type: 'number' as const,
@@ -87,25 +74,23 @@ const { widgetProps, configure } = useWidgetPropsManager(name,
 	emit,
 );
 
-interface DailyTemp {
-	min: number;
-	max: number;
-}
-
-interface DailyWeather {
-	description: string;
-	icon: string;
-}
-
-interface DailyForecast {
-	dt: number;
-	temp: DailyTemp;
-	weather: DailyWeather[];
-}
+interface JmaDailyData {
+	time: string[];
+	weather_code: number[];
+	temperature_2m_max: number[];
+	temperature_2m_min: number[];
+};
 
 interface WeatherResponse {
-	daily: DailyForecast[];
-}
+	daily: JmaDailyData;
+};
+
+interface ProcessedForecast {
+	date: string;
+	weather_code: number;
+	temp_max: number;
+	temp_min: number;
+};
 
 type Coordinates = {
 	lat: number;
@@ -113,11 +98,12 @@ type Coordinates = {
 	cityName: string;
 };
 
-interface GeocodeResult {
-	lat: number;
-	lon: number;
-	name?: string;
-	local_names?: Record<string, string>;
+interface GeocodeResponce {
+	results: {
+		latitude: number;
+		longitude: number;
+		name: string;
+	}[];
 }
 
 const fetching = ref(true);
@@ -127,16 +113,28 @@ const intervalId = ref<number | null>(null);
 const foundCityName = ref<string | null>(null);
 const cityLabel = computed(() => foundCityName.value ?? widgetProps.city);
 
-const forecasts = computed(() => {
-	return weatherData.value?.daily?.slice(0, 7) ?? [];
+const forecasts = computed((): ProcessedForecast[] => {
+	const dailyData = weatherData.value?.daily;
+
+	if (!dailyData || !dailyData.time) {
+		return [];
+	}
+
+	return dailyData.time.map((dateString, index) => {
+		return {
+			date: dateString,
+			weather_code: dailyData.weather_code[index],
+			temp_max: dailyData.temperature_2m_max[index],
+			temp_min: dailyData.temperature_2m_min[index],
+		};
+	}).slice(0, 7);
 });
 
 async function resolveCityCoordinates(city: string): Promise<Coordinates> {
 	const url = new URL(GEO_ENDPOINT);
 
-	url.searchParams.set('q', city);
-	url.searchParams.set('limit', '1');
-	url.searchParams.set('appid', widgetProps.appid);
+	url.searchParams.set('name', city);
+	url.searchParams.set('count', '1');
 
 	const response = await window.fetch(url.toString());
 
@@ -144,37 +142,43 @@ async function resolveCityCoordinates(city: string): Promise<Coordinates> {
 		throw new Error('GEOCODING_FAILED');
 	}
 
-	const data: GeocodeResult[] = await response.json();
+	const data: GeocodeResponce = await response.json();
 
-	if (!data || data.length === 0) {
+	if (!data.results || data.results.length === 0) {
 		throw new Error('CITY_NOT_FOUND');
-	}
+	};
 
-	const location = data[0];
+	// eslint-disable-next-line id-denylist
+	const location = data.results[0];
 
 	return {
-		lat: location.lat,
-		lon: location.lon,
-		cityName: location.local_names?.ja ?? location.name ?? city,
+		// eslint-disable-next-line id-denylist
+		lat: location.latitude,
+		// eslint-disable-next-line id-denylist
+		lon: location.longitude,
+		// eslint-disable-next-line id-denylist
+		cityName: location.name ?? city,
 	};
 }
 
 async function fetchWeatherByCoords(coords: Coordinates): Promise<WeatherResponse> {
 	const url = new URL(WEATHER_ENDPOINT);
 
-	url.searchParams.set('lat', String(coords.lat));
-	url.searchParams.set('lon', String(coords.lon));
-	url.searchParams.set('appid', widgetProps.appid);
-	url.searchParams.set('units', widgetProps.units);
-	url.searchParams.set('lang', widgetProps.lang);
-	url.searchParams.set('exclude', EXCLUDED_PARTS);
+	url.searchParams.set('latitude', String(coords.lat));
+	url.searchParams.set('longitude', String(coords.lon));
+
+	const dailyParams = [
+		'weather_code',
+		'temperature_2m_max',
+		'temperature_2m_min',
+	];
+	url.searchParams.set('daily', dailyParams.join(','));
+	url.searchParams.set('timezone', 'Asia/Tokyo');
+	url.searchParams.set('forecast_days', '7');
 
 	const response = await window.fetch(url.toString());
 
 	if (!response.ok) {
-		if (response.status === 401) {
-			throw new Error('INVALID_API_KEY');
-		}
 		throw new Error('WEATHER_FETCH_FAILED');
 	}
 
@@ -184,14 +188,10 @@ async function fetchWeatherByCoords(coords: Coordinates): Promise<WeatherRespons
 function resolveErrorMessage(err: unknown) {
 	if (err instanceof Error) {
 		switch (err.message) {
-			case 'NO_API_KEY':
-				return 'APIキーが設定されていません';
 			case 'NO_CITY_NAME':
 				return '都市名を入力してください';
 			case 'CITY_NOT_FOUND':
 				return '都市が見つかりません';
-			case 'INVALID_API_KEY':
-				return 'APIキーが無効です';
 			case 'GEOCODING_FAILED':
 				return '都市情報の取得に失敗しました';
 			case 'WEATHER_FETCH_FAILED':
@@ -207,12 +207,6 @@ async function refreshWeatherData() {
 	fetching.value = true;
 	error.value = null;
 	foundCityName.value = null;
-
-	if (!widgetProps.appid) {
-		error.value = resolveErrorMessage(new Error('NO_API_KEY'));
-		fetching.value = false;
-		return;
-	}
 
 	const cityQuery = widgetProps.city?.trim();
 	if (!cityQuery) {
@@ -232,23 +226,50 @@ async function refreshWeatherData() {
 	}
 }
 
-function formatDate(dt: number) {
-	const date = new Date(dt * 1000);
+function formatDate(isoString: string) {
+	const date = new Date(isoString);
 	const month = date.getMonth() + 1;
 	const day = date.getDate();
 	return `${month}/${day}`;
 }
 
-function getIconUrl(iconCode: string) {
-	return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+function getWeatherInfo(code: number): { iconPath: string; description: string } {
+	const iconBasePath = '/vite/widgets/';
+	let iconName = 'cloudy.svg';
+	let description = '曇り';
+
+	if (code === 0) {
+		iconName = 'clear-day.svg';
+		description = '晴れ';
+	} else if (code >= 1 && code <= 3) {
+		iconName = 'partly-cloudy-day.svg';
+		description = 'ほぼ晴れ';
+	} else if (code === 45 || code === 48) {
+		iconName = 'fog-day.svg';
+		description = '霧';
+	} else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+		iconName = 'rain.svg';
+		description = '雨';
+	} else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+		iconName = 'snow.svg';
+		description = '雪';
+	} else if (code >= 95 && code <= 99) {
+		iconName = 'thunderstorms-rain.svg';
+		description = '雷雨';
+	}
+
+	return {
+		iconPath: iconBasePath + iconName,
+		description: description,
+	};
 }
 
-function getMaxTemp(forecast: DailyForecast) {
-	return Math.round(forecast.temp.max);
+function getMaxTemp(forecast: ProcessedForecast) {
+	return Math.round(forecast.temp_max);
 }
 
-function getMinTemp(forecast: DailyForecast) {
-	return Math.round(forecast.temp.min);
+function getMinTemp(forecast: ProcessedForecast) {
+	return Math.round(forecast.temp_min);
 }
 
 function setupAutoRefresh () {
@@ -265,13 +286,7 @@ function setupAutoRefresh () {
 
 watch(() => widgetProps.refreshIntervalSec, setupAutoRefresh, { immediate: true });
 
-watch(
-	[
-		() => widgetProps.appid,
-		() => widgetProps.city,
-		() => widgetProps.units,
-		() => widgetProps.lang,
-	],
+watch(() => widgetProps.city,
 	refreshWeatherData,
 );
 
@@ -312,6 +327,7 @@ defineExpose<WidgetComponentExpose>({
 .from {
 	text-align: center;
 	opacity: 0.7;
+	font-size: 0.9em;
 }
 
 .weather-days {
