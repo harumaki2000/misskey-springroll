@@ -104,7 +104,7 @@ interface GeocodeResponce {
 		longitude: number;
 		name: string;
 	}[];
-}
+};
 
 const fetching = ref(true);
 const weatherData = ref<WeatherResponse | null>(null);

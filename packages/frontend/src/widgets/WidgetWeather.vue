@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: lqvp
+SPDX-FileCopyrightText: lqvp and harumaki2000
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -8,33 +8,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #icon><i class="ti ti-cloud"></i></template>
 	<template #header>{{ i18n.ts._widgets.weather }}</template>
 	<template #func="{ buttonStyleClass }">
-		<button class="_button" :class="buttonStyleClass" @click="openSearchDialog"><i class="ti ti-search"></i></button>
 		<button class="_button" :class="buttonStyleClass" @click="refreshWeatherData"><i class="ti ti-refresh"></i></button>
 		<button class="_button" :class="buttonStyleClass" @click="configure"><i class="ti ti-settings"></i></button>
 	</template>
 
 	<div>
 		<MkLoading v-if="fetching"/>
+		<div v-else-if="error" class="error-message">{{ error }}</div>
 		<div v-else class="weather-container">
 			<div class="weather-days">
-				<div v-for="(forecast, index) in forecasts" :key="index" class="weather-day">
-					<div class="weather-date">{{ formatDate(forecast.date) }} ({{ forecast.dateLabel }})</div>
-					<img :src="forecast.image.url" :alt="forecast.telop" class="weather-icon"/>
+				<div v-for="day in forecasts" :key="day.time" class="weather-day">
+					<div class="weather-date">{{ formatTime(day.time) }}</div>
+					<img :src="getWeatherInfo(day.weather_code).iconPath" :alt="getWeatherInfo(day.weather_code).description" class="weather-icon"/>
+					<div class="weather-description">{{ getWeatherInfo(day.weather_code).description }}</div>
 					<div class="weather-temp">
-						<span class="temp-max">{{ getMaxTemp(forecast) }}°C</span>
-						<span class="temp-separator"> / </span>
-						<span class="temp-min">{{ getMinTemp(forecast) }}°C</span>
-					</div>
-					<div v-if="widgetProps.showChanceOfRain" class="weather-pop">
-						<span v-for="(value, key) in forecast.chanceOfRain" :key="key" class="pop-item">
-							{{ value }}<span v-if="!isLast(String(key), forecast.chanceOfRain)" class="pop-separator"> / </span>
-						</span>
+						<span class="temp-max">{{ getHourlyTemp(day) }}℃</span>
 					</div>
 				</div>
 			</div>
-			<div v-if="widgetProps.showFooterInfo" class="weather-update-time">
-				{{ formattedFooter }}<br>
-				<a v-if="copyright" :href="copyright.link" target="_blank" class="copyright-link">{{ copyright.title }}</a>
+			<div class="footer-info">
+				<div class="city-name">{{ cityLabel }}</div>
+				<div class="from">from Open-Meteo (Updated: {{ updateTime }})</div>
 			</div>
 		</div>
 	</div>
@@ -45,90 +39,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
-import type { GetFormResultType } from '@/utility/form.js';
+import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
-import * as os from '@/os.js';
 
-// Type Definitions for Weather API
-interface Image {
-	title: string;
-	url: string;
-	width: number;
-	height: number;
-}
-
-interface TemperatureDetail {
-	celsius: string | null;
-	fahrenheit: string | null;
-}
-
-interface Temperature {
-	min: TemperatureDetail | null;
-	max: TemperatureDetail | null;
-}
-
-interface ChanceOfRain {
-	T00_06: string;
-	T06_12: string;
-	T12_18: string;
-	T18_24: string;
-}
-
-interface Forecast {
-	date: string;
-	dateLabel: string;
-	telop: string;
-	detail: {
-		weather: string;
-		wind: string;
-		wave: string | null;
-	};
-	temperature: Temperature;
-	chanceOfRain: ChanceOfRain;
-	image: Image;
-}
-
-interface Description {
-	publicTime: string;
-	publicTimeFormatted: string;
-	headlineText: string;
-	bodyText: string;
-	text: string;
-}
-
-interface WeatherLocation {
-	area: string;
-	prefecture: string;
-	district: string;
-	city: string;
-}
-
-interface Provider {
-	link: string;
-	name: string;
-	note: string;
-}
-
-interface Copyright {
-	title: string;
-	link: string;
-	image: Image;
-	provider: Provider[];
-}
-
-interface WeatherData {
-	publicTime: string;
-	publicTimeFormatted: string;
-	publishingOffice: string;
-	title: string;
-	link: string;
-	description: Description;
-	forecasts: Forecast[];
-	// eslint-disable-next-line
-	location?: WeatherLocation;
-	copyright: Copyright;
-}
+const GEO_ENDPOINT = 'https://geocoding-api.open-meteo.com/v1/search';
+const WEATHER_ENDPOINT = 'https://api.open-meteo.com/v1/jma';
 
 const name = i18n.ts._widgets.weather;
 
@@ -137,33 +53,15 @@ const widgetPropsDef = {
 		type: 'boolean' as const,
 		default: true,
 	},
-	cityId: {
-		type: 'string' as const,
-		default: '130010', // 東京
+	city: {
+		type: 'string',
+		default: 'Tokyo',
 	},
 	refreshIntervalSec: {
 		type: 'number' as const,
 		default: 3600,
 	},
-	showChanceOfRain: {
-		type: 'boolean' as const,
-		default: false,
-	},
-	showFooterInfo: {
-		type: 'boolean' as const,
-		default: true,
-	},
-	footerFormat: {
-		type: 'string' as const,
-		default: '{location} | {publicTimeFormatted} | {updateTime}',
-		description: '利用可能なプレースホルダー: {location}, {publishingOffice}, {publicTimeFormatted}, {title}, {headlineText}, {bodyText}, {updateTime}',
-		multiline: true,
-	},
-	primaryAreaXmlUrl: {
-		type: 'string' as const,
-		default: 'https://raw.githubusercontent.com/tsukumijima/weather-api/refs/heads/master/public/primary_area.xml',
-	},
-};
+} satisfies FormWithDefault;
 
 type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
 
@@ -172,72 +70,218 @@ const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
 const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
 
+interface JmaCurrentData {
+	time: string;
+	weather_code: number;
+}
+
+interface JmaHourlyData {
+	time: string[];
+	weather_code: number[];
+	temperature_2m: number[];
+};
+
+interface WeatherResponse {
+	current: JmaCurrentData;
+	hourly: JmaHourlyData;
+};
+
+interface ProcessedHourlyForecast {
+	time: string;
+	weather_code: number;
+	temperature: number;
+};
+
+type Coordinates = {
+	lat: number;
+	lon: number;
+	cityName: string;
+};
+
+interface GeocodeResponce {
+	results: {
+		latitude: number;
+		longitude: number;
+		name: string;
+	}[];
+};
+
 const fetching = ref(true);
-const weatherData = ref<WeatherData | null>(null);
+const weatherData = ref<WeatherResponse | null>(null);
+const error = ref<string | null>(null);
+const foundCityName = ref<string | null>(null);
+const cityLabel = computed(() => foundCityName.value ?? widgetProps.city);
 const updateTime = ref('');
 const intervalId = ref<number | null>(null);
-const copyright = ref<Copyright | null>(null);
 
-const forecasts = computed(() => weatherData.value?.forecasts || []);
+const forecasts = computed((): ProcessedHourlyForecast[] => {
+	const currentData = weatherData.value?.current;
+	const hourlyData = weatherData.value?.hourly;
 
-const formattedFooter = computed(() => {
-	if (!weatherData.value) return '';
+	if (!currentData || !hourlyData || !hourlyData.time) {
+		return [];
+	}
 
-	const locationString = weatherData.value.location
-		? `${weatherData.value.location.prefecture} ${weatherData.value.location.city}`
-		: weatherData.value.publishingOffice;
+	const currentTime = currentData.time;
+	const startIndex = hourlyData.time.findIndex(t => t >= currentTime);
 
-	const replacements: Record<string, string> = {
-		'{location}': locationString,
-		'{publishingOffice}': weatherData.value.publishingOffice,
-		'{publicTimeFormatted}': weatherData.value.publicTimeFormatted,
-		'{title}': weatherData.value.title,
-		'{headlineText}': weatherData.value.description.headlineText,
-		'{bodyText}': weatherData.value.description.bodyText,
-		'{updateTime}': updateTime.value,
-	};
+	if (startIndex === -1) {
+		return [];
+	}
 
-	return widgetProps.footerFormat.replace(
-		/\{[^}]+\}/g,
-		(match) => replacements[match] ?? match,
-	);
+	const futureHours = hourlyData.time.slice(startIndex - 1, startIndex + 3);
+	const futureCodes = hourlyData.weather_code.slice(startIndex - 1, startIndex + 3);
+	const futureTemps = hourlyData.temperature_2m.slice(startIndex - 1, startIndex + 3);
+
+	return futureHours.map((time, index) => {
+		return {
+			time: time,
+			weather_code: futureCodes[index],
+			temperature: futureTemps[index],
+		};
+	});
 });
 
-const fetchWeatherData = async () => {
-	try {
-		fetching.value = true;
-		const response = await window.fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
-		const data = await response.json();
-		weatherData.value = data;
-		copyright.value = data.copyright;
-		updateTime.value = new Date().toLocaleTimeString();
-	} catch (error) {
-		console.error('Failed to fetch weather data:', error);
+async function resolveCityCoordinates(city: string): Promise<Coordinates> {
+	const url = new URL(GEO_ENDPOINT);
+
+	url.searchParams.set('name', city);
+	url.searchParams.set('count', '1');
+
+	const response = await window.fetch(url.toString());
+
+	if (!response.ok) {
+		throw new Error('GEOCODING_FAILED');
 	}
-	fetching.value = false;
-};
+
+	const data: GeocodeResponce = await response.json();
+
+	if (!data.results || data.results.length === 0) {
+		throw new Error('CITY_NOT_FOUND');
+	};
+
+	// eslint-disable-next-line id-denylist
+	const location = data.results[0];
+
+	return {
+		// eslint-disable-next-line id-denylist
+		lat: location.latitude,
+		// eslint-disable-next-line id-denylist
+		lon: location.longitude,
+		// eslint-disable-next-line id-denylist
+		cityName: location.name ?? city,
+	};
+}
+
+async function fetchWeatherData() {
+	fetching.value = true;
+	error.value = null;
+	weatherData.value = null;
+
+	const cityQuery = widgetProps.city?.trim();
+	if (!cityQuery) {
+		error.value = '都市名が設定されていません';
+		fetching.value = false;
+		return;
+	}
+
+	try {
+		const coords = await resolveCityCoordinates(cityQuery);
+		foundCityName.value = coords.cityName;
+		const data = await fetchWeatherByCoords(coords);
+		weatherData.value = data;
+		updateTime.value = new Date().toLocaleTimeString();
+	} catch (err: unknown) {
+		error.value = resolveErrorMessage(err);
+	} finally {
+		fetching.value = false;
+	}
+}
+
+async function fetchWeatherByCoords(coords: Coordinates): Promise<WeatherResponse> {
+	const url = new URL(WEATHER_ENDPOINT);
+
+	url.searchParams.set('latitude', String(coords.lat));
+	url.searchParams.set('longitude', String(coords.lon));
+
+	const hourlyParams = [
+		'temperature_2m',
+		'weather_code',
+	];
+	url.searchParams.set('hourly', hourlyParams.join(','));
+	url.searchParams.set('current', 'weather_code');
+	url.searchParams.set('forecast_days', '1');
+	url.searchParams.set('timezone', 'Asia/Tokyo');
+
+	const response = await window.fetch(url.toString());
+
+	if (!response.ok) {
+		throw new Error('WEATHER_FETCH_FAILED');
+	}
+	return response.json();
+}
 
 const refreshWeatherData = () => {
 	fetchWeatherData();
 };
 
-const formatDate = (dateString: string) => {
-	const date = new Date(dateString);
-	return `${date.getMonth() + 1}/${date.getDate()}`;
-};
+function formatTime(isoString: string) {
+	const date = new Date(isoString);
+	return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
 
-const getMaxTemp = (forecast: Forecast) => {
-	return forecast.temperature.max?.celsius ?? '--';
-};
+function getHourlyTemp(forecast: ProcessedHourlyForecast) {
+	return forecast.temperature?.toFixed(1) ?? '--';
+}
 
-const getMinTemp = (forecast: Forecast) => {
-	return forecast.temperature.min?.celsius ?? '--';
-};
+function resolveErrorMessage(err: unknown) {
+	if (err instanceof Error) {
+		switch (err.message) {
+			case 'NO_CITY_NAME':
+				return '都市名を入力してください';
+			case 'CITY_NOT_FOUND':
+				return '都市が見つかりません';
+			case 'GEOCODING_FAILED':
+				return '都市情報の取得に失敗しました';
+			case 'WEATHER_FETCH_FAILED':
+				return '天気予報の取得に失敗しました';
+			default:
+				break;
+		}
+	}
+	return '通信エラーが発生しました';
+}
 
-const isLast = (key: string, obj: object) => {
-	const keys = Object.keys(obj);
-	return keys.indexOf(key) === keys.length - 1;
-};
+function getWeatherInfo(code: number): { iconPath: string; description: string } {
+	const iconBasePath = '/vite/widgets/';
+	let iconName = 'cloudy.svg';
+	let description = '曇り';
+
+	if (code === 0) {
+		iconName = 'clear-day.svg';
+		description = '晴れ';
+	} else if (code >= 1 && code <= 3) {
+		iconName = 'partly-cloudy-day.svg';
+		description = 'ほぼ晴れ';
+	} else if (code === 45 || code === 48) {
+		iconName = 'fog-day.svg';
+		description = '霧';
+	} else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+		iconName = 'rain.svg';
+		description = '雨';
+	} else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
+		iconName = 'snow.svg';
+		description = '雪';
+	} else if (code >= 95 && code <= 99) {
+		iconName = 'thunderstorms-rain.svg';
+		description = '雷雨';
+	}
+
+	return {
+		iconPath: iconBasePath + iconName,
+		description: description,
+	};
+}
 
 const setupAutoRefresh = () => {
 	if (intervalId.value) {
@@ -251,111 +295,8 @@ const setupAutoRefresh = () => {
 	}
 };
 
-const normalizePrefName = (prefName: string): string => {
-	return prefName
-		.replace(/[都府県]$/, '')
-		.toLowerCase()
-		.trim();
-};
-
-interface City {
-	id: string;
-	title: string;
-	pref: string;
-}
-
-const fetchCities = async (xmlUrl: string): Promise<City[]> => {
-	try {
-		const response = await window.fetch(xmlUrl);
-		if (!response.ok) {
-			throw new Error('都市データの取得に失敗しました');
-		}
-		const text = await response.text();
-		const parser = new DOMParser();
-		const xmlDoc = parser.parseFromString(text, 'text/xml');
-
-		// すべてのpref要素を取得
-		const prefs = xmlDoc.querySelectorAll('pref');
-		const cities: City[] = [];
-
-		prefs.forEach(pref => {
-			const prefTitle = pref.getAttribute('title') ?? '';
-			// 各都道府県内のcity要素を取得
-			const citiesInPref = pref.querySelectorAll('city');
-
-			citiesInPref.forEach(city => {
-				cities.push({
-					id: city.getAttribute('id') ?? '',
-					title: city.getAttribute('title') ?? '',
-					pref: prefTitle,
-				});
-			});
-		});
-
-		return cities;
-	} catch (error) {
-		console.error('Failed to fetch city data:', error);
-		throw new Error('都市データの取得に失敗しました');
-	}
-};
-
-const openSearchDialog = async () => {
-	try {
-		const searchResult = await os.inputText({
-			title: '都道府県を検索',
-			text: '都道府県名を入力してください',
-			placeholder: '例: 東京都、大阪府、神奈川県',
-		});
-
-		if (searchResult.canceled || !searchResult.result) return;
-
-		const searchTerm = normalizePrefName(searchResult.result);
-		const cities = await fetchCities(widgetProps.primaryAreaXmlUrl);
-
-		// 正規化した都道府県名で検索
-		const filteredCities = cities.filter(city =>
-			normalizePrefName(city.pref).includes(searchTerm),
-		);
-
-		if (filteredCities.length === 0) {
-			await os.alert({
-				type: 'error',
-				title: 'エラー',
-				text: '該当する都道府県が見つかりませんでした。\n別の都道府県名で検索してください。',
-			});
-			return;
-		}
-
-		// 都市を地域名でソート
-		const sortedCities = filteredCities.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-
-		const cityOptions = sortedCities.map(city => ({
-			value: city.id,
-			text: `${city.title} (${city.pref})`,
-		}));
-
-		const result = await os.select({
-			title: '都市を選択',
-			text: `${filteredCities.length}件の都市が見つかりました`,
-			default: cityOptions[0].value,
-			items: cityOptions,
-		});
-
-		if (!result.canceled && result.result) {
-			widgetProps.cityId = result.result;
-			await fetchWeatherData();
-		}
-	} catch (error) {
-		await os.alert({
-			type: 'error',
-			title: 'エラー',
-			text: error instanceof Error ? error.message : '予期せぬエラーが発生しました',
-		});
-	}
-};
-
 watch(() => widgetProps.refreshIntervalSec, setupAutoRefresh, { immediate: true });
-watch(() => widgetProps.cityId, fetchWeatherData, { immediate: true });
+watch(() => widgetProps.city, fetchWeatherData, { immediate: true });
 
 onBeforeUnmount(() => {
 	if (intervalId.value) window.clearInterval(intervalId.value);
@@ -373,6 +314,11 @@ defineExpose<WidgetComponentExpose>({
 </script>
 
 <style lang="scss" scoped>
+.error-message {
+	color: var(--MI_THEME-accent);
+	padding: 16px;
+	text-align: center;
+}
 .weather-container {
 	display: flex;
 	flex-direction: column;
@@ -414,6 +360,11 @@ defineExpose<WidgetComponentExpose>({
 	height: 40px;
 }
 
+.weather-description {
+	font-size: 12px;
+	text-align: center;
+}
+
 .weather-temp {
 	display: flex;
 	flex-direction: row;
@@ -424,34 +375,27 @@ defineExpose<WidgetComponentExpose>({
 .temp-max {
 	font-size: 14px;
 	font-weight: bold;
-	color: #f04715;
 }
 
-.temp-min {
-	font-size: 12px;
-	color: #0988e6;
+.footer-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
 }
 
-.weather-pop {
-	font-size: 10px;
-	text-align: center;
-	opacity: 0.8;
-}
-
-.weather-update-time {
+.city-name {
 	font-size: 0.8em;
 	opacity: 0.9;
 	text-align: center;
 	margin-top: 4px;
-	white-space: pre-wrap;
 }
 
-.copyright-link {
-	color: var(--MI_THEME-fg);
-	opacity: 0.7;
-	text-decoration: none;
-	&:hover {
-		text-decoration: underline;
-	}
+.from {
+	font-size: 0.8em;
+	opacity: 0.9;
+	text-align: center;
+	margin-top: 4px;
 }
 </style>
