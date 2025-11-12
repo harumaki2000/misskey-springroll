@@ -1,3 +1,8 @@
+## v1.7.5
+
+### Client
+- Enhance: 天気予報ウィジェットのAPIをOpen-Meteoに変更、現在時刻から4時間分表示するように
+
 ## v1.7.4
 
 ### Client
