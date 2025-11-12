@@ -1212,6 +1212,11 @@ async function setExpirationTime() {
 		expiresAt.value = new Date(Date.now() + result);
 	} else if (result === 'null') {
 		expiresAt.value = null;
+	} else if (typeof result === 'string') {
+		const milliseconds = Number(result);
+		if (!Number.isNaN(milliseconds)) {
+			expiresAt.value = new Date(Date.now() + milliseconds);
+		}
 	}
 }
 
