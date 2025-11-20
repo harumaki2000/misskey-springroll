@@ -11,17 +11,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkFeatureBanner>
 
 		<div class="_gaps_s">
-			<SearchMarker v-slot="slotProps" :keywords="['general']">
-				<MkFolder :defaultOpen="slotProps.isParentOfTarget">
-					<template #label><SearchLabel>{{ i18n.ts.general }}</SearchLabel></template>
-					<template #icon><SearchIcon><i class="ti ti-settings"></i></SearchIcon></template>
+                                                <SearchMarker v-slot="slotProps" :keywords="['general']">
+                                                        <MkFolder :defaultOpen="slotProps.isParentOfTarget">
+                                                                <template #label><SearchLabel>{{ i18n.ts.general }}</SearchLabel></template>
+                                                                <template #icon><SearchIcon><i class="ti ti-settings"></i></SearchIcon></template>
 
-					<div class="_gaps_m">
-						<SearchMarker :keywords="['language']">
-							<MkSelect v-model="lang" :items="langs.map(x => ({ label: x[1], value: x[0] }))">
-								<template #label><SearchLabel>{{ i18n.ts.uiLanguage }}</SearchLabel></template>
-								<template #caption>
-									<I18n :src="i18n.ts.i18nInfo" tag="span">
+                                                                <div class="_gaps_m">
+                                                                        <SearchMarker :keywords="['reset', 'default', 'preferences']">
+                                                                                <MkInfo>{{ i18n.ts.resetAllPreferencesDescription }}</MkInfo>
+                                                                                <div>
+                                                                                        <MkButton danger @click="resetAllPreferences"><i class="ti ti-restore"></i> {{ i18n.ts.resetAllPreferences }}</MkButton>
+                                                                                </div>
+                                                                        </SearchMarker>
+
+                                                                        <SearchMarker :keywords="['language']">
+                                                                                <MkSelect v-model="lang" :items="langs.map(x => ({ label: x[1], value: x[0] }))">
+                                                                                        <template #label><SearchLabel>{{ i18n.ts.uiLanguage }}</SearchLabel></template>
+                                                                                        <template #caption>
+                                                                                                <I18n :src="i18n.ts.i18nInfo" tag="span">
 										<template #link>
 											<MkLink url="https://crowdin.com/project/misskey">Crowdin</MkLink>
 										</template>
@@ -947,9 +954,14 @@ const isNoteStarReactionDefault = computed(() => noteStarReaction.value === DEFA
 
 const fontSize = ref(miLocalStorage.getItem('fontSize'));
 const useSystemFont = ref(miLocalStorage.getItem('useSystemFont') != null);
+const themePreferenceKeys = ['themes', 'lightTheme', 'darkTheme', 'syncDeviceDarkMode'] as const;
 
 watch(lang, () => {
-	miLocalStorage.setItem('lang', lang.value as string);
+        if (lang.value == null) {
+                miLocalStorage.removeItem('lang');
+        } else {
+                miLocalStorage.setItem('lang', lang.value as string);
+        }
 });
 
 watch(fontSize, () => {
@@ -969,9 +981,9 @@ watch(useSystemFont, () => {
 });
 
 watch([
-	hemisphere,
-	lang,
-	realtimeMode,
+        hemisphere,
+        lang,
+        realtimeMode,
 	pollingInterval,
 	enableInfiniteScroll,
 	showNoteActionsOnlyHover,
@@ -1002,10 +1014,35 @@ watch([
 	reduceAnimation,
 	showAvailableReactionsFirstInNote,
 	animatedMfm,
-	advancedMfm,
+        advancedMfm,
 ], () => {
-	suggestReload();
+        suggestReload();
 });
+
+async function resetAllPreferences() {
+        const { canceled, result } = await os.actions({
+                type: 'warning',
+                title: i18n.ts.resetAllPreferences,
+                text: i18n.ts.resetAllPreferencesDescription,
+                actions: [
+                        { value: 'keepThemes', text: i18n.ts.resetAllPreferencesKeepThemes },
+                        { value: 'resetAll', text: i18n.ts.resetAllPreferencesAll, danger: true },
+                ],
+        });
+        if (canceled) return;
+
+        if (result === 'keepThemes') {
+                prefer.resetAll({ keepKeys: themePreferenceKeys });
+        } else {
+                prefer.resetAll();
+        }
+
+        lang.value = null;
+        fontSize.value = null;
+        useSystemFont.value = false;
+
+        os.toast(i18n.ts.preferencesReset);
+}
 
 const emojiIndexLangs = ['en-US', 'ja-JP', 'ja-JP_hira'] as const;
 

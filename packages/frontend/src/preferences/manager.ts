@@ -542,11 +542,11 @@ export class PreferencesManager {
 		this.fetchCloudValues();
 	}
 
-	public getPerPrefMenu<K extends keyof PREF>(key: K): MenuItem[] {
-		const overrideByAccount = ref(this.isAccountOverrided(key));
-		watch(overrideByAccount, () => {
-			if (overrideByAccount.value) {
-				this.setAccountOverride(key);
+        public getPerPrefMenu<K extends keyof PREF>(key: K): MenuItem[] {
+                const overrideByAccount = ref(this.isAccountOverrided(key));
+                watch(overrideByAccount, () => {
+                        if (overrideByAccount.value) {
+                                this.setAccountOverride(key);
 			} else {
 				this.clearAccountOverride(key);
 			}
@@ -560,11 +560,11 @@ export class PreferencesManager {
 					if (!res.enabled) sync.value = false;
 				});
 			} else {
-				this.disableSync(key);
-			}
-		});
+                                this.disableSync(key);
+                        }
+                });
 
-		return [{
+                return [{
 			icon: 'ti ti-copy',
 			text: i18n.ts.copyPreferenceId,
 			action: () => {
@@ -585,10 +585,42 @@ export class PreferencesManager {
 			text: i18n.ts.overrideByAccount,
 			ref: overrideByAccount,
 		}, {
-			type: 'switch',
-			icon: 'ti ti-cloud-cog',
-			text: i18n.ts.syncBetweenDevices,
-			ref: sync,
-		}];
-	}
+                        type: 'switch',
+                        icon: 'ti ti-cloud-cog',
+                        text: i18n.ts.syncBetweenDevices,
+                        ref: sync,
+                }];
+        }
+
+        public resetAll(options?: { keepKeys?: (keyof PREF)[]; }) {
+                const keepKeys = new Set(options?.keepKeys ?? []);
+                let changed = false;
+
+                for (const _key in PREF_DEF) {
+                        const key = _key as keyof PREF;
+                        if (keepKeys.has(key)) continue;
+
+                        const records = this.profile.preferences[key];
+                        if (records == null) continue;
+
+                        for (const record of records) {
+                                const defaultValue = JSON.parse(JSON.stringify(getInitialPrefValue(key)));
+                                if (!deepEqual(record[1], defaultValue)) {
+                                        changed = true;
+                                }
+                                record[1] = defaultValue;
+
+                                if (record[2].sync) {
+                                        this.io.cloudSet({ key, scope: record[0], value: defaultValue });
+                                }
+                        }
+
+                        this.rewriteRawState(key, this.getMatchedRecordOf(key)[1]);
+                }
+
+                if (changed) {
+                        this.save();
+                        this.fetchCloudValues();
+                }
+        }
 }
