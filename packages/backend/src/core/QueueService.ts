@@ -24,6 +24,7 @@ import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
 import type { Packed } from '@/misc/json-schema.js';
 import { MiNote } from '@/models/Note.js';
 import { type NotesRepository } from '@/models/_.js';
+import { baseQueueOptions, baseWorkerOptions, QUEUE } from '@/queue/const.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { LoggerService } from './LoggerService.js';
@@ -61,6 +62,7 @@ export const QUEUE_TYPES = [
 	'objectStorage',
 	'userWebhookDeliver',
 	'systemWebhookDeliver',
+	'autoDeleteNote',
 ] as const;
 
 const REPEATABLE_SYSTEM_JOB_DEF = [{
@@ -128,10 +130,21 @@ export class QueueService {
 		@Inject(DI.notesRepository) private notesRepository: NotesRepository,
 	) {
 		this.logger = this.loggerService.getLogger('autoDeleteNote');
+		this.autoDeleteNoteQueue = new Bull.Queue(
+			QUEUE.AUTO_DELETE_NOTE,
+			baseQueueOptions(this.config, QUEUE.AUTO_DELETE_NOTE),
+		);
+		this.autoDeleteNoteWorker = new Bull.Worker(
+			QUEUE.AUTO_DELETE_NOTE,
+			this.processAutoDeleteNote,
+			baseWorkerOptions(this.config, QUEUE.AUTO_DELETE_NOTE),
+		);
+
 		this.initialize().catch(err => this.logger.error('Failed to initialize autoDeleteNote service', err));
 		this.getNoteDeleteService().then(service => {
 			this.noteDeleteService = service;
 		});
+
 		for (const def of REPEATABLE_SYSTEM_JOB_DEF) {
 			this.systemQueue.upsertJobScheduler(def.name, {
 				pattern: def.pattern,
@@ -159,23 +172,14 @@ export class QueueService {
 			}
 		});
 
-		this.logger = new Logger('autoDeleteNote');
-		this.autoDeleteNoteQueue = new Bull.Queue('autoDeleteNote', {
-			connection: this.config.redis,
-			prefix: 'queue',
-		});
-		this.autoDeleteNoteWorker = new Bull.Worker('autoDeleteNote', this.processAutoDeleteNote, {
-			connection: this.config.redis,
-			prefix: 'queue',
-		});
-		this.initialize().catch(err => {
-			this.logger.error('Failed to initialize QueueService', err);
-		});
-
-		this.systemQueue.add('checkExpiredNotes', {}, {
-			repeat: { pattern: '*/15 * * * *' },
-			removeOnComplete: 10,
-			removeOnFail: 30,
+		this.systemQueue.upsertJobScheduler('checkExpiredNotes', {
+			pattern: '*/15 * * * *',
+		}, {
+			name: 'checkExpiredNotes',
+			opts: {
+				removeOnComplete: { count: 10 },
+				removeOnFail: { count: 30 },
+			},
 		});
 	}
 
@@ -194,7 +198,6 @@ export class QueueService {
 				relations: ['user'],
 			}) as MiNote;
 
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const noteDeleteService = await this.getNoteDeleteService();
 
 			await this.noteDeleteService.delete({
@@ -205,7 +208,7 @@ export class QueueService {
 			}, note);
 			this.logger.info(`Auto deleted note: ${noteId}`);
 		} catch (err) {
-			this.logger.error(`Error auto deleteing note ${noteId}:`, err);
+			this.logger.error(`Error auto deleteing note ${noteId}:`, err as any);
 			throw err;
 		}
 	}
@@ -857,6 +860,7 @@ export class QueueService {
 			case 'objectStorage': return this.objectStorageQueue;
 			case 'userWebhookDeliver': return this.userWebhookDeliverQueue;
 			case 'systemWebhookDeliver': return this.systemWebhookDeliverQueue;
+			case 'autoDeleteNote': return this.autoDeleteNoteQueue;
 			default: throw new Error(`Unrecognized queue type: ${type}`);
 		}
 	}
