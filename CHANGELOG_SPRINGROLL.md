@@ -1,3 +1,8 @@
+## v2.12.0
+
+### Client
+- Feat: 設定の一括リセット機能(misskey-dev/misskey issue #16524)
+
 ## v2.11.4
 
 ### Server
