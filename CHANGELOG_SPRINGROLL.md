@@ -1,3 +1,9 @@
+## v2.12.1
+
+### Client
+- Enhance: 設定の一括リセット機能をその他に移動
+- Fix: deep-equal.tsの修正
+
 ## v2.12.0
 
 ### Client
