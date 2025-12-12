@@ -368,12 +368,15 @@ export async function common(createVue: () => Promise<App<Element>>) {
 function removeSplash() {
 	const splash = window.document.getElementById('splash');
 	if (splash) {
-		splash.style.opacity = '0';
-		splash.style.pointerEvents = 'none';
-
-		// transitionendイベントが発火しない場合があるため
+		// systemd風ローダーのラストログが読めるよう、少し待ってからフェードアウトする
 		window.setTimeout(() => {
-			splash.remove();
+			splash.style.opacity = '0';
+			splash.style.pointerEvents = 'none';
+
+			// transitionendイベントが発火しない場合があるため
+			window.setTimeout(() => {
+				splash.remove();
+			}, 1000);
 		}, 1000);
 	}
 }

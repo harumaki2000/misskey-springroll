@@ -8,10 +8,38 @@
 class Systemd {
 	constructor(version, cmdline) {
 		this.tty_dom = document.querySelector('#tty');
+
+		// The TSX layouts no longer ship a #tty container; create one on demand
+		// so the boot log can render instead of throwing and halting the loader.
+		if (!this.tty_dom) {
+			const tty = document.createElement('div');
+			tty.id = 'tty';
+			// keep the tty above the splash for visibility while avoiding layout shift
+			const splash = document.getElementById('splash');
+			if (splash?.parentNode) {
+				splash.parentNode.insertBefore(tty, splash);
+			} else {
+				const body = document.body || document.documentElement;
+				body.prepend(tty);
+			}
+			this.tty_dom = tty;
+		}
 		const welcome = document.createElement('div');
 		welcome.className = 'tty-line';
 		welcome.innerText = `misskey-springroll ${version} running in Web mode. cmdline: ${cmdline}`;
 		this.tty_dom.appendChild(welcome);
+	}
+
+	finish() {
+		if (!this.tty_dom) return;
+		setTimeout(() => {
+			if (!this.tty_dom) return;
+			this.tty_dom.style.opacity = '0';
+			this.tty_dom.style.pointerEvents = 'none';
+			setTimeout(() => {
+				this.tty_dom?.remove();
+			}, 500);
+		}, 1000);
 	}
 	async start(id, promise) {
 		let state = { state: 'running' };
@@ -132,6 +160,12 @@ class Systemd {
 
 // ブロックの中に入れないと、定義した変数がブラウザのグローバルスコープに登録されてしまい邪魔なので
 (async () => {
+	const cmdline = new URLSearchParams(location.search).get('cmdline') || '';
+	const cmdlineArray = cmdline.split(',').map(x => x.trim());
+
+	// Instantiate early so error handlers can safely use it
+	const systemd = new Systemd(VERSION, cmdline);
+
 	window.onerror = (e) => {
 		console.error(e);
 		renderError('SOMETHING_HAPPENED', e);
@@ -141,14 +175,10 @@ class Systemd {
 		renderError('SOMETHING_HAPPENED_IN_PROMISE', e.reason || e);
 	};
 
-	const cmdline = new URLSearchParams(location.search).get('cmdline') || '';
-	const cmdlineArray = cmdline.split(',').map(x => x.trim());
 	if (cmdlineArray.includes('nosplash')) {
 		document.querySelector('#splashIcon').classList.add('hidden');
 		document.querySelector('#splashSpinner').classList.add('hidden');
 	}
-
-	const systemd = new Systemd(VERSION, cmdline);
 
 	if (cmdlineArray.includes('leak')) {
 		await systemd.start('Promise Leak Service', new Promise(() => { }));
@@ -192,6 +222,8 @@ class Systemd {
 			});
 	}
 
+	let importAppPromise = null;
+
 	if (cmdlineArray.includes('fail')) {
 		await systemd.startSync('Force Error Service', () => {
 			throw new Error('This error is forced by having fail in command line.');
@@ -200,10 +232,16 @@ class Systemd {
 
 	// タイミングによっては、この時点でDOMの構築が済んでいる場合とそうでない場合とがある
 	if (document.readyState !== 'loading') {
-		systemd.start('import App Script', importAppScript());
+		importAppPromise = systemd.start('import App Script', importAppScript()).then((res) => {
+	 		systemd.finish();
+	 		return res;
+	 	}).catch((err) => { throw err; });
 	} else {
 		window.addEventListener('DOMContentLoaded', () => {
-			systemd.start('import App Script', importAppScript());
+			importAppPromise = systemd.start('import App Script', importAppScript()).then((res) => {
+				systemd.finish();
+				return res;
+			}).catch((err) => { throw err; });
 		});
 	}
 	//#endregion
