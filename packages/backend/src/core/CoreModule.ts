@@ -21,7 +21,6 @@ import { AccountUpdateService } from './AccountUpdateService.js';
 import { AiService } from './AiService.js';
 import { AnnouncementService } from './AnnouncementService.js';
 import { AntennaService } from './AntennaService.js';
-import { AppLockService } from './AppLockService.js';
 import { AchievementService } from './AchievementService.js';
 import { AvatarDecorationService } from './AvatarDecorationService.js';
 import { CaptchaService } from './CaptchaService.js';
@@ -168,7 +167,6 @@ const $AccountUpdateService: Provider = { provide: 'AccountUpdateService', useEx
 const $AiService: Provider = { provide: 'AiService', useExisting: AiService };
 const $AnnouncementService: Provider = { provide: 'AnnouncementService', useExisting: AnnouncementService };
 const $AntennaService: Provider = { provide: 'AntennaService', useExisting: AntennaService };
-const $AppLockService: Provider = { provide: 'AppLockService', useExisting: AppLockService };
 const $AchievementService: Provider = { provide: 'AchievementService', useExisting: AchievementService };
 const $AvatarDecorationService: Provider = { provide: 'AvatarDecorationService', useExisting: AvatarDecorationService };
 const $CaptchaService: Provider = { provide: 'CaptchaService', useExisting: CaptchaService };
@@ -325,7 +323,6 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		AiService,
 		AnnouncementService,
 		AntennaService,
-		AppLockService,
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
@@ -477,7 +474,6 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$AiService,
 		$AnnouncementService,
 		$AntennaService,
-		$AppLockService,
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
@@ -631,7 +627,6 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		AiService,
 		AnnouncementService,
 		AntennaService,
-		AppLockService,
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
@@ -782,7 +777,6 @@ const $QueueService: Provider = { provide: 'QueueService', useExisting: QueueSer
 		$AiService,
 		$AnnouncementService,
 		$AntennaService,
-		$AppLockService,
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
