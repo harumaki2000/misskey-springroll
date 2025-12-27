@@ -9,7 +9,6 @@ import type { MiMeta, MiNote, NotesRepository } from '@/models/_.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import ActiveUsersChart from '@/core/chart/charts/active-users.js';
 import { DI } from '@/di-symbols.js';
-import { RoleService } from '@/core/RoleService.js';
 import { IdService } from '@/core/IdService.js';
 import { CacheService } from '@/core/CacheService.js';
 import { QueryService } from '@/core/QueryService.js';
@@ -78,7 +77,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private noteEntityService: NoteEntityService,
 		private activeUsersChart: ActiveUsersChart,
-		private roleService: RoleService,
 		private idService: IdService,
 		private cacheService: CacheService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
@@ -88,11 +86,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
 			const sinceId = ps.sinceId ?? ( ps.sinceDate ? this.idService.gen(ps.sinceDate!) : null);
-
-			const policies = await this.roleService.getUserPolicies(me.id);
-			if (!policies.ltlAvailable) {
-				throw new ApiError(meta.errors.mutualTimelineDisabled);
-			}
 
 			if (ps.withReplies && ps.withFiles) {
 				throw new ApiError(meta.errors.bothWithRepliesAndWithFiles);
