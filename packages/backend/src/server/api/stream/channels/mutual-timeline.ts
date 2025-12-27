@@ -8,7 +8,6 @@ import type { Packed } from '@/misc/json-schema.js';
 import { MetaService } from '@/core/MetaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { bindThis } from '@/decorators.js';
-import { RoleService } from '@/core/RoleService.js';
 import { isQuotePacked, isRenotePacked } from '@/misc/is-renote.js';
 import type { JsonObject } from '@/misc/json-value.js';
 import { CacheService } from '@/core/CacheService.js';
@@ -28,7 +27,6 @@ class MutualTimelineChannel extends Channel {
 
 	constructor(
 		private metaService: MetaService,
-		private roleService: RoleService,
 		private noteEntityService: NoteEntityService,
 		private cacheService: CacheService,
 		private userFollowingService: UserFollowingService,
@@ -41,9 +39,6 @@ class MutualTimelineChannel extends Channel {
 
 	@bindThis
 	public async init(params: JsonObject) {
-		const policies = await this.roleService.getUserPolicies(this.user ? this.user.id : null);
-		if (!policies.ltlAvailable) return;
-
 		this.withRenotes = !!(params.withRenotes ?? true);
 		this.withReplies = !!(params.withReplies ?? false);
 		this.withFiles = !!(params.withFiles ?? false);
@@ -143,7 +138,6 @@ export class MutualTimelineChannelService implements MiChannelService<true> {
 
 	constructor(
 		private metaService: MetaService,
-		private roleService: RoleService,
 		private noteEntityService: NoteEntityService,
 		private cacheService: CacheService,
 		private userFollowingService: UserFollowingService,
@@ -154,7 +148,6 @@ export class MutualTimelineChannelService implements MiChannelService<true> {
 	public create(id: string, connection: Channel['connection']): MutualTimelineChannel {
 		return new MutualTimelineChannel(
 			this.metaService,
-			this.roleService,
 			this.noteEntityService,
 			this.cacheService,
 			this.userFollowingService,
