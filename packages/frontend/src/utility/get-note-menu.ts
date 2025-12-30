@@ -594,6 +594,43 @@ export function getRenoteMenu(props: {
 	mock?: boolean;
 }) {
 	const appearNote = getAppearNote(props.note) ?? props.note;
+	const triggerRenoteRipple = () => {
+		const el = props.renoteButton.value;
+		if (el && prefer.s.animation) {
+			const rect = el.getBoundingClientRect();
+			const x = rect.left + (el.offsetWidth / 2);
+			const y = rect.top + (el.offsetHeight / 2);
+			const { dispose } = os.popup(MkRippleEffect, { x, y }, {
+				end: () => dispose(),
+			});
+		}
+	};
+
+	const postRenote = (payload: {
+		renoteId: string;
+		channelId?: string;
+		localOnly?: boolean;
+		visibility?: Visibility;
+	}, toastText: string) => {
+		if (props.mock) return;
+		misskeyApi('notes/create', payload).then((res) => {
+			os.toast(toastText);
+			globalEvents.emit('notePosted', res.createdNote);
+		});
+	};
+
+	const unrenoteAndRenote = async (payload: {
+		renoteId: string;
+		channelId?: string;
+		localOnly?: boolean;
+		visibility?: Visibility;
+	}, toastText: string) => {
+		if (props.mock) return;
+		await misskeyApi('notes/unrenote', { noteId: appearNote.id });
+		const res = await misskeyApi('notes/create', payload);
+		os.toast(toastText);
+		globalEvents.emit('notePosted', res.createdNote);
+	};
 
 	const channelRenoteItems: MenuItem[] = [];
 	const normalRenoteItems: MenuItem[] = [];
@@ -604,25 +641,21 @@ export function getRenoteMenu(props: {
 			text: i18n.ts.inChannelRenote,
 			icon: 'ti ti-repeat',
 			action: () => {
-				const el = props.renoteButton.value;
-				if (el && prefer.s.animation) {
-					const rect = el.getBoundingClientRect();
-					const x = rect.left + (el.offsetWidth / 2);
-					const y = rect.top + (el.offsetHeight / 2);
-					const { dispose } = os.popup(MkRippleEffect, { x, y }, {
-						end: () => dispose(),
-					});
-				}
-
-				if (!props.mock) {
-					misskeyApi('notes/create', {
-						renoteId: appearNote.id,
-						channelId: appearNote.channelId,
-					}).then((res) => {
-						os.toast(i18n.ts.renoted);
-						globalEvents.emit('notePosted', res.createdNote);
-					});
-				}
+				triggerRenoteRipple();
+				postRenote({
+					renoteId: appearNote.id,
+					channelId: appearNote.channelId,
+				}, i18n.ts.renoted);
+			},
+		}, {
+			text: i18n.ts.unrenoteAndRenote,
+			icon: 'ti ti-repeat',
+			action: async () => {
+				triggerRenoteRipple();
+				await unrenoteAndRenote({
+					renoteId: appearNote.id,
+					channelId: appearNote.channelId,
+				}, i18n.ts.renoted);
 			},
 		}, {
 			text: i18n.ts.inChannelQuote,
@@ -643,15 +676,7 @@ export function getRenoteMenu(props: {
 			text: i18n.ts.renote,
 			icon: 'ti ti-repeat',
 			action: () => {
-				const el = props.renoteButton.value;
-				if (el && prefer.s.animation) {
-					const rect = el.getBoundingClientRect();
-					const x = rect.left + (el.offsetWidth / 2);
-					const y = rect.top + (el.offsetHeight / 2);
-					const { dispose } = os.popup(MkRippleEffect, { x, y }, {
-						end: () => dispose(),
-					});
-				}
+				triggerRenoteRipple();
 
 				const configuredVisibility = prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility;
 				const localOnly = prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly;
@@ -662,16 +687,32 @@ export function getRenoteMenu(props: {
 					visibility = smallerVisibility(visibility, 'home');
 				}
 
-				if (!props.mock) {
-					misskeyApi('notes/create', {
-						localOnly,
-						visibility,
-						renoteId: appearNote.id,
-					}).then((res) => {
-						os.toast(i18n.ts.renoted);
-						globalEvents.emit('notePosted', res.createdNote);
-					});
+				postRenote({
+					localOnly,
+					visibility,
+					renoteId: appearNote.id,
+				}, i18n.ts.renoted);
+			},
+		}, {
+			text: i18n.ts.unrenoteAndRenote,
+			icon: 'ti ti-repeat',
+			action: async () => {
+				triggerRenoteRipple();
+
+				const configuredVisibility = prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility;
+				const localOnly = prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly;
+
+				let visibility = appearNote.visibility;
+				visibility = smallerVisibility(visibility, configuredVisibility);
+				if (appearNote.channel?.isSensitive) {
+					visibility = smallerVisibility(visibility, 'home');
 				}
+
+				await unrenoteAndRenote({
+					localOnly,
+					visibility,
+					renoteId: appearNote.id,
+				}, i18n.ts.renoted);
 			},
 		}, ...(props.mock ? [] : [{
 			text: i18n.ts.quote,
@@ -695,25 +736,11 @@ export function getRenoteMenu(props: {
 				}).map((channel) => ({
 					text: channel.name,
 					action: () => {
-						const el = props.renoteButton.value;
-						if (el && prefer.s.animation) {
-							const rect = el.getBoundingClientRect();
-							const x = rect.left + (el.offsetWidth / 2);
-							const y = rect.top + (el.offsetHeight / 2);
-							const { dispose } = os.popup(MkRippleEffect, { x, y }, {
-								end: () => dispose(),
-							});
-						}
-
-						if (!props.mock) {
-							misskeyApi('notes/create', {
-								renoteId: appearNote.id,
-								channelId: channel.id,
-							}).then((res) => {
-								os.toast(i18n.tsx.renotedToX({ name: channel.name }));
-								globalEvents.emit('notePosted', res.createdNote);
-							});
-						}
+						triggerRenoteRipple();
+						postRenote({
+							renoteId: appearNote.id,
+							channelId: channel.id,
+						}, i18n.tsx.renotedToX({ name: channel.name }));
 					},
 				}));
 			},
