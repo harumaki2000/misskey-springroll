@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				tabindex="0"
 				@click="showFileMenu(item, $event)"
 				@keydown.space.enter="showFileMenu(item, $event)"
-				@contextmenu.prevent="showFileMenu(item, $event)"
+				@contextmenu.prevent.stop="showFileMenu(item, $event)"
 			>
 				<!-- pointer-eventsをnoneにしておかないとiOSなどでドラッグしたときに画像の方に判定が持ってかれる -->
 				<MkDriveFileThumbnail style="pointer-events: none;" :data-id="item.id" :class="$style.thumbnail" :file="item" fit="cover"/>
@@ -97,7 +97,7 @@ async function detachAndDeleteMedia(file: Misskey.entities.DriveFile) {
 	globalEvents.emit('driveFilesDeleted', [file]);
 }
 
-function toggleSensitive(file) {
+function toggleSensitive(file: Misskey.entities.DriveFile) {
 	if (mock) {
 		emit('changeSensitive', file, !file.isSensitive);
 		return;
@@ -111,7 +111,7 @@ function toggleSensitive(file) {
 	});
 }
 
-async function rename(file) {
+async function rename(file: Misskey.entities.DriveFile) {
 	if (mock) return;
 
 	const { canceled, result } = await os.inputText({
@@ -149,7 +149,7 @@ async function describe(file: Misskey.entities.DriveFile) {
 	});
 }
 
-function showFileMenu(file: Misskey.entities.DriveFile, ev: MouseEvent | KeyboardEvent): void {
+function showFileMenu(file: Misskey.entities.DriveFile, ev: PointerEvent | KeyboardEvent): void {
 	if (menuShowing) return;
 
 	const isImage = file.type.startsWith('image/');

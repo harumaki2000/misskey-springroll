@@ -735,7 +735,11 @@ export class MiMeta {
 	@Column('jsonb', {
 		default: { },
 	})
-	public clientOptions: Record<string, any>;
+	public clientOptions: {
+		entrancePageStyle: 'classic' | 'simple';
+		showTimelineForVisitor: boolean;
+		showActivitiesForVisitor: boolean;
+	};
 }
 
 export type SoftwareSuspension = {

@@ -4,9 +4,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { forwardRef, Inject, Injectable, Module } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
-import { parse as parseRedisInfo } from 'redis-info';
 import { LessThan } from 'typeorm';
 import * as Bull from 'bullmq';
 import { ModuleRef } from '@nestjs/core';
@@ -28,7 +27,6 @@ import { baseQueueOptions, baseWorkerOptions, QUEUE } from '@/queue/const.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { LoggerService } from './LoggerService.js';
-import { CoreModule } from './CoreModule.js';
 import type {
 	DbJobData,
 	DeliverJobData,
@@ -50,6 +48,19 @@ import type {
 	UserWebhookDeliverQueue,
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
+
+function parseRedisInfo(infoText: string): Record<string, string> {
+	const fields = infoText
+		.split('\n')
+		.filter(line => line.length > 0 && !line.startsWith('#'))
+		.map(line => line.trim().split(':'));
+
+	const result: Record<string, string> = {};
+	for (const [key, value] of fields) {
+		result[key] = value;
+	}
+	return result;
+}
 
 export const QUEUE_TYPES = [
 	'system',
@@ -1023,7 +1034,7 @@ export class QueueService {
 			},
 			db: {
 				version: db.redis_version,
-				mode: db.redis_mode,
+				mode: db.redis_mode as 'cluster' | 'standalone' | 'sentinel',
 				runId: db.run_id,
 				processId: db.process_id,
 				port: parseInt(db.tcp_port),
