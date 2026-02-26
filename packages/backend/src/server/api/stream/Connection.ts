@@ -140,7 +140,7 @@ export default class Connection {
 
 		try {
 			obj = JSON.parse(data.toString());
-		} catch (e) {
+		} catch (_) {
 			return;
 		}
 
