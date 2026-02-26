@@ -714,8 +714,8 @@ export function contextMenu(items: MenuItem[], ev: MouseEvent): Promise<void> {
 	}));
 }
 
-export function post(props: PostFormProps = {}): Promise<void> {
-	pleaseLogin({
+export async function post(props: PostFormProps = {}): Promise<void> {
+	const isLoggedIn = await pleaseLogin({
 		openOnRemote: (props.initialText || props.initialNote ? {
 			type: 'share',
 			params: {
@@ -725,6 +725,7 @@ export function post(props: PostFormProps = {}): Promise<void> {
 			},
 		} : undefined),
 	});
+	if (!isLoggedIn) return;
 
 	showMovedDialog();
 	return new Promise(resolve => {
