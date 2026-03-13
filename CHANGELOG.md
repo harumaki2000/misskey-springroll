@@ -1,7 +1,16 @@
-## 2026.2.0
+## 2026.3.1
+
+### General
+- 依存関係の更新
+
+### Server
+- Fix: セキュリティに関する修正
+
+
+## 2026.3.0
 
 ### Note
-- `users/following` の `birthday` プロパティは非推奨になりました。代わりに `users/get-following-birthday-users` をご利用ください。
+- `users/following` の `birthday` プロパティは非推奨になりました。代わりに `users/get-following-users-by-birthday` をご利用ください。
 
 ### General
 - Enhance: 「もうすぐ誕生日のユーザー」ウィジェットで、誕生日が至近のユーザーも表示できるように  
@@ -34,6 +43,7 @@
   - モザイクの色味がより自然になるように修正
   - ぼかしに不自然な縦線が入る問題を修正
 - Fix: フォロー承認通知でフォローされた際のメッセージの絵文字が表示されない問題を修正
+- Fix: HTTP環境など（Secure Contextのない環境）で、設定画面が閲覧できない問題を修正
 
 ### Server
 - Enhance: OAuthのクライアント情報取得（Client Information Discovery）において、IndieWeb Living Standard 11 July 2024で定義されているJSONドキュメント形式に対応しました
