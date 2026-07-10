@@ -10,9 +10,8 @@ export function deepEqual(a: JsonLike, b: JsonLike): boolean {
 	if (typeof a !== typeof b) return false;
 
 	if (a === null) return b === null;
-	if (b === null) return false;
-
 	if (a === undefined) return b === undefined;
+	if (b === null) return false;
 	if (b === undefined) return false;
 
 	if (Array.isArray(a) && Array.isArray(b)) {
