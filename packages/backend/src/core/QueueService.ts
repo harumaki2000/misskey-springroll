@@ -1033,7 +1033,7 @@ export class QueueService {
 		const isPaused = await queue.isPaused();
 		const metrics_completed = await queue.getMetrics('completed', 0, MetricsTime.ONE_WEEK);
 		const metrics_failed = await queue.getMetrics('failed', 0, MetricsTime.ONE_WEEK);
-		const db = parseRedisInfo(await (await queue.client).info());
+		const db = parseRedisInfo(await (await queue.getBackend().client).info());
 
 		return {
 			name: queueType,
@@ -1066,11 +1066,3 @@ export class QueueService {
 		};
 	}
 }
-//@Module({
-//	imports: [
-//		LoggerService,
-//		forwardRef(() => CoreModule),
-//	],
-//	providers: [QueueService],
-//})
-//export class QueueModule {}
