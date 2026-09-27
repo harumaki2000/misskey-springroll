@@ -203,19 +203,19 @@ import { inject, ref, useTemplateRef, provide, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { Ref } from 'vue';
 import type { Keymap } from '@/utility/hotkey.js';
-import { $i } from '@/i.js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 import { userPage } from '@/filters/user.js';
-import { noteEvents } from '@/composables/use-note-capture.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { focusPrev, focusNext } from '@/utility/focus.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
 import number from '@/filters/number.js';
-import * as sound from '@/utility/sound.js';
 import { DI } from '@/di.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import * as sound from '@/utility/sound.js';
+
+declare const $i: { id: string } | null;
 
 // コンポーネント外部の依存関係
 import MkNoteSub from '@/components/MkNoteSub.vue';
@@ -228,6 +228,7 @@ import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 import { DEFAULT_NOTE_STAR_REACTION } from '@/preferences/def.js';
+import { noteEvents } from '@/composables/use-note-capture.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
