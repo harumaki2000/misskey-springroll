@@ -206,7 +206,7 @@ export class QueueService {
 		try {
 			const note = await this.notesRepository.findOneOrFail({
 				where: { id: noteId },
-				relations: ['user'],
+				relations: { user: true },
 			}) as MiNote;
 
 			const noteDeleteService = await this.getNoteDeleteService();
@@ -233,7 +233,7 @@ export class QueueService {
 			where: {
 				expiresAt: LessThan(now),
 			},
-			select: ['id'],
+			select: { id: true },
 		});
 
 		this.logger.info(`Found ${expiredNotes.length} expired notes to delete`);
