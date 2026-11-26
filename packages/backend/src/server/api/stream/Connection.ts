@@ -27,6 +27,7 @@ import { HybridTimelineChannel } from '@/server/api/stream/channels/hybrid-timel
 import { GlobalTimelineChannel } from '@/server/api/stream/channels/global-timeline.js';
 import { MutualTimelineChannel } from '@/server/api/stream/channels/mutual-timeline.js';
 import { UserListChannel } from '@/server/api/stream/channels/user-list.js';
+import { ClipChannel } from '@/server/api/stream/channels/clip.js';
 import { HashtagChannel } from '@/server/api/stream/channels/hashtag.js';
 import { RoleTimelineChannel } from '@/server/api/stream/channels/role-timeline.js';
 import { AntennaChannel } from '@/server/api/stream/channels/antenna.js';
@@ -46,6 +47,7 @@ import type { EventEmitter } from 'events';
 
 const MAX_CHANNELS_PER_CONNECTION = 32;
 const MAX_SUBSCRIBING_NOTES_PER_CONNECTION = 1536;
+const MAX_BUFFERED_AMOUNT_PER_CONNECTION = 1024 * 1024 * 8; // 8MiB
 
 /**
  * Main stream connection
@@ -283,10 +285,18 @@ export default class Connection {
 	 */
 	@bindThis
 	public sendMessageToWs(type: string, payload: JsonObject) {
-		this.wsConnection.send(JSON.stringify({
+		const message = JSON.stringify({
 			type: type,
 			body: payload,
-		}));
+		});
+
+		// 受信が追いつかないクライアントのために送信バッファを溜め続けないよう、閾値を超えたら切断して再接続させる
+		if (this.wsConnection.bufferedAmount + Buffer.byteLength(message) > MAX_BUFFERED_AMOUNT_PER_CONNECTION) {
+			this.wsConnection.terminate();
+			return;
+		}
+
+		this.wsConnection.send(message);
 	}
 
 	/**
@@ -355,6 +365,7 @@ export default class Connection {
 			case 'globalTimeline': return GlobalTimelineChannel;
 			case 'mutualTimeline': return MutualTimelineChannel;
 			case 'userList': return UserListChannel;
+			case 'clip': return ClipChannel;
 			case 'hashtag': return HashtagChannel;
 			case 'roleTimeline': return RoleTimelineChannel;
 			case 'antenna': return AntennaChannel;
